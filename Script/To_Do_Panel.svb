@@ -1,0 +1,382 @@
+﻿'USEUNIT EDGE_Util
+'USEUNIT Series_Search
+'USEUNIT HTML
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT SourceSchedule
+'USEUNIT Layout
+'USEUNIT Source
+'USEUNIT DM
+'USEUNIT STP
+'USEUNIT Master_Maintanance
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+
+''**************************************************************
+'Start    : All STP Related script will be written in this unit
+'Start Date    : 15/06/2020
+'Created by: Chethana S R
+'************************************************************** 
+
+
+'Function to Open Check List
+
+Function sOpenCheckList()
+  On Error Resume Next
+  
+  Dim strTemp, objEdge, objCaption, objText
+  
+  strTemp = "WPFObject(""DockLayoutManager"")"
+  Set objEdge =Sys.Process("EdgeClient").FindChild("Name",strTemp, 60,True)
+   objText = objEdge.FindAllChildren("ClrClassName","AutoHideGroup", 10,True)
+        For i=0 to ubound(objText)
+          log.Message objText(i).FullName
+          log.Message objText(i).Name
+          objCaption = objText(i).FindAllChildren("ClrClassName", "AutoHidePaneHeaderItem",10,True)
+          For j=0 to ubound(objCaption)
+            log.Message objCaption(j).FullName
+            log.Message objCaption(j).Name
+            if objCaption(j).Content.Caption = "Check List" then 
+                  log.Message objCaption(j).FullName
+                  objCaption(j).ClickR
+                   Delay 2000,"Pls Wait.."
+                  sys.Keys "[Down][Enter]"
+                  Delay 3000,"Pls Wait.."
+                  Exit For 
+              End if 
+          Next
+        Next    
+     
+ 
+
+    Call sEdgeProcessor()
+    Delay 3000,"Pls Wait.."
+    
+    
+    If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenCheckList', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+  
+    Set bjEdge = Nothing 
+    Set objCaption = Nothing 
+    Set objText = Nothing 
+
+End Function
+'***************************************************************************************************************************
+'Function to select Country , Startand End Date and Choose Frequency
+
+Function sSelectData(strCountry)
+'Function sSelectData()
+  On Error Resume Next
+  
+  Dim strTemp, objTemp , objGrid , objcomboBox
+  
+  'Select Country
+  'strCountry = "Test"
+  strTemp = "WPFObject(""RootGroup"")"
+  Set objGrid = Sys.Process("EdgeClient").FindChild("Name", strTemp, 60, True)
+  strTemp= "WPFObject(""ComboBox"", "", 1)"
+  Set objTemp = objGrid.WPFObject("Grid", "", 1).WPFObject("WrapPanel", "", 1).FindChild("Name", strTemp, 10, True)
+  Call objTemp.Set_Text(strCountry)
+  
+  'Give Date from and Date to ex:Todays date
+  strTemp= "WPFObject(""DateFromDateEdit"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 60, True)
+  Call objTemp.DataContext.set_SelectedDateFrom(aqConvert.DateTimeToStr(Date))
+  
+  strTemp= "WPFObject(""DateToDateEdit"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 60, True)
+  Call objTemp.DataContext.set_SelectedDateTo(aqConvert.DateTimeToStr(Date))
+  
+  'Choose the frequency 'Annually' from the dropdown 
+  Set objcomboBox = Aliases.EdgeClient.HwndSource_Shell.Shell.Grid.ContentControl.Grid.PART_RibbonLayout.Part_WindowContent.Grid.ContentControl.PART_ContainerContent.BarManager.DockPanel.DockLayoutManager.LayoutGroup.LayoutPanel.LayoutPanelContentPresenter.Root.AdornerDecorator.AdornedControl.BarManager.Grid.RootGroup.Grid.WrapPanel.StackPanel.ComboboxFrequency
+  objcomboBox.DropDown
+  Call Aliases.EdgeClient.HwndSource_PopupRoot.PopupRoot.Decorator.NonLogicalAdornerDecorator.ComboboxitemEdgeclientModulesInfrastructur5.StackPanel.CheckBox.ClickButton(cbChecked)
+  Call objcomboBox.ClickItem(6)
+
+' click on the button 'Refresh'
+  For I = 0 To 4
+    strTemp= "WPFObject(""ContentControlEx"", ""Refresh"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    If objTemp.Exists = True then 
+      objTemp.Click
+      Call sEdgeProcessor
+      Delay 2000, "Pls Wait.."
+    End If
+   Next
+    
+    'Call Refresh
+    Delay 3000,"Refresh..."
+    
+    
+    If Err.Number > 0 Then
+    Log.Warning("Error in 'sSelectData' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+  
+
+  Set objcomboBox = Nothing 
+  Set objGrid = Nothing 
+  Set objTemp = Nothing 
+  
+
+End Function
+
+'**********************************************************************************************************************
+'Function to Expandand Select CheckList 
+Sub sExpandAndSelectCheckList(strParameters)
+'Sub sExpandAndSelectCheckList()
+
+  On Error Resume Next
+  Dim strTemp , objTemp, objGrid , strLevel2src_Name , strLevel3src_Name , strButton
+  Dim strValue , intRowHandle1 , intchildcnt , BlnVisible , objCell, objTab
+  
+  strLevel2src_Name= getSplitValue(strParameters,"LEVEL2SOURCE")
+  strLevel3src_Name= getSplitValue(strParameters,"LEVEL3SOURCE")  
+  strButton =getSplitValue(strParameters,"Button") 
+'
+
+
+'    strSource_Name="Test"
+'    strLevel2src_Name="Automation_UIT4_1"
+'    strLevel3src_Name="Source_Schedule"
+'    strTestCase_no = "TC_CHECKLIST_PRT09"
+''   strButton= "WPFObject(""ContentControlEx"", ""Open Source"", 2)"
+'    'strButton= "WPFObject(""ContentControlEx"", ""Open Global STP"", 2)"
+'    'strButton= "WPFObject(""ContentControlEx"", ""Open CN STP"", 2)"
+'    'strButton= "WPFObject(""ContentControlEx"", ""Open URL"", 2) "
+
+
+    
+  strTemp = "WPFObject(""HierarchyPanel"", "", 1)"  
+  Set objTemp= Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("CheckListGridControl").WPFObject("CheckListTableView").FindChild("Name", strTemp, 10, True)
+  intchildcnt=objTemp.Children.Count
+  
+  For I = 0 to intchildcnt-1
+    strValue=objTemp.Children.Item(I).DataContext.GroupValue.Value
+    If strValue=strLevel2src_Name then     
+      intRowHandle1=objTemp.Children.Item(I).DataContext.GroupValue.Data.RowHandle.Value      
+      Call objGrid.ExpandGroupRow(intRowHandle1)    
+      Call sEdgeProcessor()
+      Delay 2000 
+      'msgbox I     
+      For J= 0 to intchildcnt-1        
+        strValue = objTemp.Children.Item(J).DataContext.GroupValue.Value
+        if strValue=strLevel3src_Name then 
+          intRowHandle1=objTemp.Children.Item(J).DataContext.GroupValue.Data.RowHandle.Value
+          Call objGrid.ExpandGroupRow(intRowHandle1)        
+           Exit For              
+        End If           
+      Next
+      Call sEdgeProcessor()
+      Delay 2000
+      log.Message "Expanding"    
+      End If 
+  Next
+  
+  'Verify SeriesID:
+  objRowControl = objTemp.FindAllChildren("ClrClassName","RowControl",10,true)
+  For K = 1 to ubound(objRowControl)
+    BlnVisible = aqObject.GetPropertyValue(objTemp.WPFObject("RowControl", "", K), "Visible")
+    If BlnVisible = True Then 
+      sPub_Desc = objTemp.WPFObject("RowControl", "", K).DataContext.Row.PublicationDescription
+       If   Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_CHECKLIST_PRT09")) And sPub_Desc = strLevel3src_Name Then
+          strTCRemarks = "Publication Description in Checklist is same as Publication description in source"
+          log.Message strTCRemarks
+          strTestCaseResult="PASS"
+          Exit Sub 
+       Else
+          strTCRemarks = "Publication Description in Checklist is not same as Publication description in source"
+          log.Message strTCRemarks
+          strTestCaseResult="FAIL"
+          Exit Sub
+       End If 
+           
+      Set objCell = objTemp.WPFObject("RowControl", "", K).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1)
+      Call objCell.ClickR()
+      Set objTab = Sys.Process("EdgeClient").WPFObject("HwndSource: PopupRoot", "").FindChild("Name", strButton, 50, True)
+      Call objTab.Click()      
+      log.message strButton & " Is Clicked"
+      Exit For
+    End If
+  Next 
+  
+'  If Err.Number > 0 Then
+'    Err.Clear
+'    Log.Warning("Error in 'sExpandAndSelectCheckList' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+'  End If  
+  
+  Set objTab = Nothing 
+  Set objCell = Nothing 
+  Set objGrid = Nothing 
+  Set objTemp = Nothing 
+      
+End Sub 
+
+'**************************************************************************************************************************88
+'Testcase:TC_CHECKLIST_PRT02-05: Check for the Open source in Checklist
+Sub sOpenSourceCheckList(strParameters)
+'Sub sOpenSourceCheckList()
+
+  On Error Resume Next
+  Dim strTemp, objTemp , strCountry ,strLevel2src_Name, strLevel3src_Name , objGrid
+  
+  strCountry=getSplitValue(strParameters,"LEVEL1SOURCE")
+  strLevel2src_Name= getSplitValue(strParameters,"LEVEL2SOURCE")
+  strLevel3src_Name= getSplitValue(strParameters,"LEVEL3SOURCE")  
+  
+  'strCountry = "Test"
+  
+  
+  'Open the checklist module
+  Call sOpenCheckList()
+  
+  'Select Country Date and Frequnecy
+  Call sSelectData(strCountry)
+  
+  'Select the  child node Expand the tree 
+  'Right click on the Series ID and Click on the following buttons
+  'Open Source
+  Call sExpandAndSelectCheckList(strParameters)
+  Call sEdgeProcessor()
+  Delay 3000, "Please wait Source module is loading ..."
+  
+  'Verify Respective Window is Opened
+      
+  strTemp=  "WPFObject(""LayoutGroup"", """", 1)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  strTemp= "WPFObject(""SourceTreeControl"")"      
+  Set objGrid = objTemp.WPFObject("LayoutPanel", "", 2).FindChild("Name", strTemp, 50, True)
+  If Ucase(objGrid.SelectedItem.get_Description) = Ucase(strLevel3src_Name) Then
+     strTCRemarks = "Source Window is Opened"
+     log.message strTCRemarks
+     strTestCaseResult = "PASS"
+  Else
+    strTCRemarks = "Source Window is Not Opened"
+    log.message strTCRemarks
+    strTestCaseResult = "FAIL"        
+  End If
+      
+  'Cloese the Source Window
+  Call sCloseLayout2()
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenSourceCheckList' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+  
+  Set objGrid = Nothing 
+  Set objTemp = Nothing 
+
+  
+End Sub
+'*************************************************************************************************************************
+'Testcase:TC_CHECKLIST_PRT02-05: Check for the Open STP and CN STP and URL from Checklist window
+Sub sOpenSTPAndURLChecklist(strParameters)
+  
+  On Error Resume Next
+  Dim strTemp, objTemp , PropValue ,strLevel2src_Name, strLevel3src_Name , strText
+  strTestDataFile= getSplitValue(strParameters,"TestDataFile") 
+  
+  'Select the  child node Expand the tree 
+  'Right click on the Series ID and Click on the following buttons
+  'Open STP / Open CN STP/ OPEN Url
+  Call sExpandAndSelectCheckList(strParameters)
+  
+  'Verify STP File is Opened
+  If   Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_CHECKLIST_PRT05"))Then
+    Delay 3000 , "Please Wait Browser is Loading"
+    Set objTemp = Sys.Browser("iexplore").Page("https://www.google.com/"& "*")
+    PropValue = aqObject.GetPropertyValue(objTemp, "LocationName")
+        If PropValue = "Google" Then 
+          strTCRemarks = "Google Home page is opened"
+          log.message strTCRemarks
+          strTestCaseResult = "PASS"
+          'Close Browser 
+         Aliases.browser.BrowserWindow.Close
+        Else
+          strTCRemarks = "Google Home page is  not opened"
+          log.message strTCRemarks
+          strTestCaseResult = "FAIL"        
+        End If   
+             
+  Else 
+      Call sExcelFullHistory()
+      Delay 2000, "Please Wait.. STP file is opening ..."
+      
+     If   Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_CHECKLIST_PRT03"))Then
+        Set objTemp = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2","", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).MSAAObject("property_page_Ribbon").MSAAObject("title_bar")
+        strText = "STP File is Opened"
+      End If
+     If   Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_CHECKLIST_PRT04"))Then
+       Set objTemp = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 3).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).MSAAObject("property_page_Ribbon").MSAAObject("title_bar")
+        strText = "CN STP File is Opened"
+     End If
+       PropValue = aqObject.GetPropertyValue(objTemp, "Description")
+      If PropValue = strTestDataFile Then 
+        strTCRemarks = strText
+        log.message strTCRemarks
+        strTestCaseResult = "PASS"        
+      Else
+        strTCRemarks = "STP File is Not Opened"
+        log.message strTCRemarks
+        strTestCaseResult = "FAIL"        
+      End If 
+      'Close STP File
+        Call ExcelProcessKill()
+  End If
+      
+End Sub
+'**************************************************************************************************************************88
+'Function to Close the Checklist
+Function sCloseChecList()
+  On Error Resume Next
+  Dim objEdge, objCaption, objText
+  
+ ''Closing Checklist
+    Delay 4000,"Pls Wait.."
+   strTemp = "WPFObject(""DockLayoutManager"")"
+   Set objEdge = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   objText = objEdge.FindAllChildren("ClrClassName","LayoutGroup", 10,True)
+        For i=0 to ubound(objText)
+          log.Message objText(i).FullName
+          log.Message objText(i).Name
+          objCaption = objText(i).FindAllChildren("ClrClassName", "LayoutPanel",10,True)
+          For j=0 to ubound(objCaption)
+            log.Message objCaption(j).FullName
+            log.Message objCaption(j).Name
+            if objCaption(j).Content.Caption = "Check List" then 
+                  log.Message objCaption(j).FullName
+                   Call objCaption(j).ClickR(objCaption(j).top/2,objCaption(j).left/30,0)
+                   Call objCaption(j).ClickR(275, 8)
+                   Delay 5000,"Pls Wait.."
+                  sys.Keys "[Down][Down][Enter]"
+                  Delay 5000,"Pls Wait.."
+                  Exit For 
+              End if 
+          Next
+        Next 
+  
+        Set objEdge = Nothing 
+        Set objCaption = Nothing 
+        Set objText  = Nothing     
+        
+End Function
+'***************************************************************************************************************8
+'Testcase:TC_CHECKLIST_PRT09: Verify Publication Descriton same as Source Description
+Sub sPublicationDescription(strParameters)
+  
+  On Error Resume Next
+  Dim strTemp, objTemp , PropValue ,strLevel2src_Name, strLevel3src_Name , strText  
+  
+  
+  'Select the  child node Expand the tree 
+  'Right click on the Series ID and Click on the following buttons
+  'Verify Publication Description
+  Call sExpandAndSelectCheckList(strParameters)
+  
+  'Close checkList 
+  Call sCloseChecList()
+End Sub
+

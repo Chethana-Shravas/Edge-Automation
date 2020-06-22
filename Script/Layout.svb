@@ -1,0 +1,2445 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+
+'################################################################################################################################################################33
+'Testcase:TC_LAYOUT_PRT01: Verify user rights for level1 folder
+sub sLevel1Right(strParameters)
+
+  On Error Resume Next 
+  Dim objTemp, strTemp
+  
+  strLevle1=getSplitValue(strParameters,"Level1")
+  
+  'Open source module
+  Call sOpenLayout()  
+  Call sEdgeProcessor()
+  
+  'Select First Level folder
+  Call sLayoutGridSelection(strParameters)
+  
+  
+  ''Verify "NewLayout Topic is anabled or not to check user rights  
+  strTemp = "WPFObject(""ContentControlEx"", ""New Layout Topic"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  If objTemp.Enabled Then 
+    strTCRemarks = "New layout topic is enabled for level1 folder: " & strLevle1 & "and , user have all access right for corresponding db "
+    log.message "New layout topic is enabled for level1 folder: " & strLevle1 & "and , user have all access right for corresponding db "
+    strTestCaseResult="PASS"       
+  Else
+    strTCRemarks = "New layout topic is disabled for level1 folder: " & strLevle1 & "and , user have all certain access right for corresponding db "
+    log.message "New layout topic is disabled for level1 folder: " & strLevle1 & "and , user have all certain access right for corresponding db "
+    strTestCaseResult="PASS"      
+  End If
+
+  Set objTemp = Nothing 
+  
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sLevel1Right', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+'################################################################################################################################################################33
+
+
+'Fucntion to select the Grid in Layout module 
+Function sLayoutGridSelection(strParameters)
+'Function sLayoutGridSelection()
+   On Error Resume Next
+   
+   Dim strTemp, objGridControl, IntCount(4)
+   
+   strLevel1=getSplitValue(strParameters,"Level1")
+   strLevel2=getSplitValue(strParameters,"Level2")  
+   strLevel3=getSplitValue(strParameters,"Level3")
+'  strLevel3src_Name=getSplitValue(strParameters,"WORKSPACE")
+'  strCategory=getSplitValue(strParameters,"CATEGORY")
+'  strLevel = getSplitValue(strParameters,"LEVEL")
+  strMultiLevel = getSplitValue(strParameters,"MultiLevel")
+
+'    strLevel1 = "dX Non-Asia Database (Current Eng Version)" 
+'    strLevel2 = "Test"
+'    strLevel3 = "abb"
+    'strLevle1= 
+   
+   
+   
+   strTemp = "WPFObject(""LayoutTreeListView"")"
+   Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   
+   'Expanding First Node
+   intTotNodeCnt=objGridControl.Nodes_2.Count  
+   For intI=0 to intTotNodeCnt-1         
+     If Ucase(objGridControl.Nodes_2.Item(intI).Content.Description)=Ucase(strLevel1) then
+        objGridControl.Nodes_2.Item(intI).ExpandAll               
+         intRow=objGridControl.Nodes_2.Item(intI).get_RowHandle         
+         Call sSelcetLayoutLevel(objGridControl, intRow)
+         IntCount(0) = intI
+         Delay 200           
+      Exit For
+    End If
+   Next
+   
+   
+   'Selceting the Second Level 
+   'strLevle2=getSplitValue(strParameters,"Levle2")
+   'msgbox strLevle2  
+   intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Count
+   For intJ=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Content.Description)=Ucase(strLevel2) then        
+        objGridControl.Nodes_2.Item(intI).ExpandAll       
+        intRow=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).get_RowHandle
+        Call sSelcetLayoutLevel(objGridControl, intRow)
+'         If  Ucase(Trim(strMultiLevel)) = Ucase(Trim("Yes"))Then   
+'           SYS.Keys("!") 
+'           Call objGridControl.SelectRowCore(intRow+1)
+'         End If             
+        IntCount(1) = intJ
+        Delay 200     
+      Exit For
+    End If
+   Next
+  
+   
+   'Selecting the Third Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Count        
+  For intK=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Content.Description)=Ucase(strLevel3) then
+      objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).ExpandAll      
+          intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).get_RowHandle          
+          Call sSelcetLayoutLevel(objGridControl, intRow)  
+          IntCount(2) = intK
+          Dealy 200       
+      Exit For
+    End If
+   Next
+   
+   Err.Clear     
+   sLayoutGridSelection = IntCount
+   Set objGridControl = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sLayoutGridSelection', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Function
+'################################################################################################################################################################33
+
+'Fucntion to select Level
+
+Function sSelcetLayoutLevel(objGridControl, intRow)
+  on Error Resume Next
+  
+  objGridControl.Keys "^[Home]"
+  Call objGridControl.ClearSelectionCore
+  Call objGridControl.FocusViewAndRow(objGridControl,intRow)
+  objGridControl.SetFocusOnCurrentItem
+  Call objGridControl.SelectRowCore(intRow) 
+  Err.Clear()
+  
+End Function
+
+'################################################################################################################################################################33
+'Testcase:TC_LAYOUT_PRT01: Verify user rights for level1 folder
+Sub sNewLayoutTopic(strParameters)
+'Sub sNewLayoutTopic()
+
+  On Error Resume Next
+  Dim strTemp, objTemp 
+  
+  
+  strLevle1=getSplitValue(strParameters,"Level1")
+  strDesc=getSplitValue(strParameters,"Desc")
+  strDescLocal=getSplitValue(strParameters,"DescLocal")
+  strTop=getSplitValue(strParameters,"Top")
+  strSelectLevel2=getSplitValue(strParameters,"SelectLevel2")
+   blnFlag = False
+  
+  
+  'Open source module
+  Call sOpenLayout()  
+  Call sEdgeProcessor()
+  
+  'Select First Level folder which have right acess
+  intRcnt =  sLayoutGridSelection(strParameters)
+  
+  'Click on "NewLayouttopic" button  
+  strTemp = "WPFObject(""ContentControlEx"", ""New Layout Topic"", 2)"
+  Call sObjClick(strTemp)
+  Delay 200
+  
+  '.Input all the fields in the pop up .Check the 'Top' button of 'Insert After Layout' 
+  
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: NewLayoutTopicPrompt", "New Layout (Level 2)").WPFObject("NewLayoutTopicPrompt", "New Layout (Level 2)", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("StackPanel", "", 1)
+  Call objTemp.WPFObject("StackPanel", "", 2).WPFObject("TextEdit", "", 1).Click
+  SYS.Keys strDesc
+  Call objTemp.WPFObject("StackPanel", "", 3).WPFObject("TextEdit", "", 1).Click
+  SYS.Keys strDescLocal
+  Call objTemp.WPFObject("StackPanel", "", 5).WPFObject("ComboBoxEdit", "", 1).SetText("Both")
+  
+  If strTop = "Yes" Then 
+    Call objTemp.WPFObject("StackPanel", "", 6).WPFObject("InsertLayoutAfterCheckEdit").set_IsChecked(TRUE)    
+  Else
+    'Call objTemp.WPFObject("StackPanel", "", 6).WPFObject("InsertLayoutAfterCheckEdit").set_IsChecked(TRUE)  
+    Call objTemp.WPFObject("StackPanel", "", 6).WPFObject("InsertSourceAfterComboEdit").SetText(strSelectLevel2)
+  End If
+  
+  
+  'Click on Save Button
+  
+  strTemp= "WPFObject(""Button"", ""Save"", 1)"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: NewLayoutTopicPrompt", "New Layout (Level 2)").FindChild("Name",strTemp,50,True)
+  Call objTemp.Click  
+  Call sEdgeProcessor()
+  
+  strTemp = "WPFObject(""LayoutTreeListView"")"
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  If strTop = "Yes" And Ucase(objGridControl.Nodes_2.Item(intRcnt(0)).Nodes.Item(0).Content.Description)=Ucase(strDesc) Then        
+      strTCRemarks = "New Folder is created under " & strLevle1 & " Level1Folder"
+      log.message  "New Folder is created under " & strLevle1 & " Level1Folder"
+      strTestCaseResult="PASS"
+      blnFlag = True
+  Else
+    intTotNodeCnt=objGridControl.Nodes_2.Item(intRcnt(0)).Nodes.Count
+    For intJ=0 to intTotNodeCnt-1
+      If Ucase(objGridControl.Nodes_2.Item(intRcnt(0)).Nodes.Item(intJ).Content.Description)=Ucase(strDesc) Then
+        If Ucase(objGridControl.Nodes_2.Item(intRcnt(0)).Nodes.Item(intJ-1).Content.Description)=Ucase(strSelectLevel2) Then
+            strTCRemarks = "New Folder is created under " & strLevle1 & " Level1Folder"
+            log.message  "New Folder is created under " & strLevle1 & " Level1Folder"
+            strTestCaseResult="PASS"
+            blnFlag = True
+            Exit For
+       End If  
+     End If     
+    Next    
+  End If
+    
+   
+  
+  
+  
+  'Verify the Added Folder just below the Level1 folder
+   If blnFlag = False then       
+      strTCRemarks = "New Folder is not created"
+      log.message  "New Folder is not created"
+      strTestCaseResult="PASS" 
+   End If
+   
+   Set objGridControl = nothing 
+
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sNewLayoutTopic', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Sub
+
+
+'################################################################################################################################################################33
+'Testcase:TC_LAYOUT_PRT05: Verify Open for view for new Workspace
+
+Sub sOpenForViewLayout(strParameters)
+'Function fOpenLayoutWorkspace()
+  on Error Resume Next
+  Dim strTemp, objTemp
+  
+  'strButton = getSplitValue(strParameters,"Button") 
+      
+
+  
+   'Open source module
+  Call sOpenLayout()  
+  Call sEdgeProcessor()
+  
+  'Select the Required Folder
+  
+  Call sLayoutGridSelection(strParameters)
+  
+'  DescText=Replace(aqDateTime.Now,"/","-")
+'  DescText=Replace(DescText,":","_") 
+'  'DescLocalText = DescText
+
+  ''Clicking on "New Workspace" Button and selecting "Open for Edit(Souce)" option 
+  strTemp="WPFObject(""ContentControlEx"", ""New Workspace"", 2)"  
+  Set objNewWorkspace=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  Call sObjClick(strTemp)
+  strTemp= "WPFObject(""ContentControlEx"", ""Open For View"", 2)" 
+  Call sObjClick(strTemp)
+  Call sEdgeProcessor()
+  
+  'Close the Layout 
+  Call sCloseSWV()
+  
+  'Select the required Grid
+  Call sLayoutGridSelection(strParameters)
+  Call sEdgeProcessor()
+  
+  strTemp = "WPFObject(""ContentControlEx"", ""Add Folder"", 2)"
+  Call sObjClick(strTemp)
+  Delay 200 
+  
+  strTemp = "WPFObject(""Button_OK"")"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Workspace").FindChild("Name",strTemp,50,True)
+  If objTemp.Exists Then 
+    objTemp.Click
+    strTCRemarks = "The Workspace is opened in View Only Mode"
+    log.message  "The Workspace is opened in View Only Mode"
+    strTestCaseResult="PASS"
+    Call sCloseSWV()
+  Else
+    strTCRemarks = "The Workspace is opened in View Only Mode message did not dispaly"
+    log.message  "The Workspace is opened in View Only Mode message did not dispaly"
+    strTestCaseResult="FAIL"
+    Call sCloseSWV()    
+  End If
+
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenForViewLayout', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Sub
+
+'################################################################################################################################################################33
+'Testcase:TC_LAYOUT_PRT06-9: Verify Open for Edit testcases
+
+'Sub sOpenForEditLayout(strParameters)
+''Sub sOpenForEditLayout()
+'  On Error Resume Next
+'  Dim strTemp, objTemp
+'  
+'   'Open source module
+'  Call sOpenLayout()  
+'  Call sEdgeProcessor()
+'  
+'  'Select the Required Folder  
+'  Call sLayoutGridSelection(strParameters)
+'  
+'  DescText=Replace(aqDateTime.Now,"/","-")
+'  DescText=Replace(DescText,":","_") 
+'  
+'  ''Clicking on "New Workspace" Button and selecting "Open for Edit(Souce)" option 
+'  strTemp="WPFObject(""ContentControlEx"", ""New Workspace"", 2)"  
+'  Set objNewWorkspace=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+'  Call sObjClick(strTemp)
+'  strTemp="WPFObject(""ContentControlEx"", ""Open For Edit"", 2)"  
+'  Call sObjClick(strTemp)
+'  'Call sEdgeProcessor()
+'  
+'   ''Waiting for Workspace Name prompt
+'      strTemp="WPFObject(""HwndSource: WorkspaceNamePrompt"", ""Please provide a new Workspace Name"")"
+'      Set objNewWrkSpace_Name=Sys.Process("EdgeClient").WaitChild(strTemp,60000)
+'        If objNewWrkSpace_Name.Exists = True then
+'          strTemp="WPFObject(""ChangeNameTextEdit"")"
+'          ''Entering Workspace Name
+'          Set objNewWrkSpace_Txtbox=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+'            If objNewWrkSpace_Txtbox.Exists = True then
+'              If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_LAYOUT_PRT07"))Then
+'                  strTemp = "WPFObject(""CancelButton"")"
+'                  Set objTemp = objNewWrkSpace_Name. FindChild("Name",strTemp,9,True)
+'                  Call objTemp.Click
+'                  Delay 2000
+'                  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2)
+'                  'Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2)
+'                  If objTemp.Exists Then 
+'                    strTCRemarks = "New Workspace is created"
+'                    log.message "New Workspace is created"
+'                    strTestCaseResult="FAIL"
+'                  Else
+'                    strTCRemarks = "New Workspace is not created"
+'                    log.message "New Workspace is not created"
+'                    strTestCaseResult="PASS"                    
+'                  End if 
+'                  Exit Sub 
+'               End If
+'              
+'              objNewWrkSpace_Txtbox.Click
+'              objNewWrkSpace_Txtbox.Text=DescText
+'              ''Clicking on Ok Button 
+'              strTemp="WPFObject(""OkButton"")"
+'              Set objNewWrkSpace_okbtn=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+'              If objNewWrkSpace_okbtn.Exists = True then
+'                objNewWrkSpace_okbtn.Click 
+'                Call sEdgeProcessor()
+'                Call sCloseSWV()              
+'              End If
+'            End If
+'        End If
+'    
+'   'Verify Workspace is opened for Edit Mode
+'  ' If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_LAYOUT_PRT05"))Then
+'      
+'      Set objTemp =  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1)
+'      If objTemp.Caption = "Layout Workspace (For Edit) - "& DescText then 
+'          strTCRemarks = "The selected workspace is opened in Edit Mode"
+'          log.message "The selected workspace is opened in Edit Mode"
+'          strTestCaseResult="PASS"                   
+'      Else
+'          strTCRemarks = "The selected workspace is not opened in Edit Mode"
+'          log.message "The selected workspace is not opened in Edit Mode"
+'          strTestCaseResult="FAIL"                      
+'      End If      
+'      Call sCloseSWV()
+'      Call sLayoutWorkSpacevwr() 
+'      Exit Sub    
+'   'End If
+' 
+'End Sub
+
+
+'################################################################################################################################################################33
+'Testcase:TC_LAYOUT_PRT06-8: Verify Open for Edit testcases
+
+Function sOpenForEditLayout(strParameters)
+'Sub sOpenForEditLayout()
+  On Error Resume Next
+  Dim strTemp, objTemp
+     
+  strExitScript =getSplitValue(strParameters,"ExitScript")
+   'Open source module
+  Call sOpenLayout()  
+  Call sEdgeProcessor()
+  Delay 2000 , "Please wait Layout Form is loading"
+  
+  'Select the Required Folder  
+  Call sLayoutGridSelection(strParameters)
+  
+  DescText=Replace(aqDateTime.Now,"/","-")
+  DescText=Replace(DescText,":","_") 
+  ''strDescText = DescText
+  
+  ''Clicking on "New Workspace" Button and selecting "Open for Edit(Souce)" option 
+  strTemp="WPFObject(""ContentControlEx"", ""New Workspace"", 2)"  
+  Set objNewWorkspace=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  Call sObjClick(strTemp)
+  strTemp="WPFObject(""ContentControlEx"", ""Open For Edit"", 2)"  
+  Call sObjClick(strTemp)
+  'Call sEdgeProcessor()
+  
+   ''Waiting for Workspace Name prompt
+      strTemp="WPFObject(""HwndSource: WorkspaceNamePrompt"", ""Please provide a new Workspace Name"")"
+      Set objNewWrkSpace_Name=Sys.Process("EdgeClient").WaitChild(strTemp,60000)
+        If objNewWrkSpace_Name.Exists = True then
+          strTemp="WPFObject(""ChangeNameTextEdit"")"
+          ''Entering Workspace Name
+          Set objNewWrkSpace_Txtbox=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+            If objNewWrkSpace_Txtbox.Exists = True then
+              If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_LAYOUT_PRT07"))Then
+                  strTemp = "WPFObject(""CancelButton"")"
+                  Set objTemp = objNewWrkSpace_Name. FindChild("Name",strTemp,9,True)
+                  Call objTemp.Click
+                  Delay 2000
+                  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2)
+                  'Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2)
+                  If objTemp.Exists Then 
+                    strTCRemarks = "New Workspace is created"
+                    log.message "New Workspace is created"
+                    strTestCaseResult="FAIL"
+                  Else
+                    strTCRemarks = "New Workspace is not created"
+                    log.message "New Workspace is not created"
+                    strTestCaseResult="PASS"                    
+                  End if 
+                  Exit Function 
+               End If
+              
+              objNewWrkSpace_Txtbox.Click
+              objNewWrkSpace_Txtbox.Text=DescText
+              ''Clicking on Ok Button 
+              strTemp="WPFObject(""OkButton"")"
+              Set objNewWrkSpace_okbtn=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+              If objNewWrkSpace_okbtn.Exists = True then
+                objNewWrkSpace_okbtn.Click 
+                Call sEdgeProcessor()
+                Call sCloseSWV()     
+                If  strExitScript = "YES" Then  
+                  sOpenForEditLayout = DescText
+                  Exit Function 
+                End If       
+              End If
+            End If
+        End If
+    
+   'Verify Workspace is opened for Edit Mode
+  ' If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_LAYOUT_PRT05"))Then
+      
+      Set objTemp =  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1)
+      If objTemp.Caption = "Layout Workspace (For Edit) - "& DescText then 
+          strTCRemarks = "The selected workspace is opened in Edit Mode"
+          log.message "The selected workspace is opened in Edit Mode"
+          strTestCaseResult="PASS"                   
+      Else
+          strTCRemarks = "The selected workspace is not opened in Edit Mode"
+          log.message "The selected workspace is not opened in Edit Mode"
+          strTestCaseResult="FAIL"                      
+      End If      
+      Call sCloseSWV()
+      Call sLayoutWorkSpacevwr() 
+      Exit Function    
+   'End If   
+
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenForViewLayout', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Function
+
+'################################################################################################################################################################33
+'Testcase:TC_LAYOUT_PRT09-10: Verify delete layout folder
+
+Sub sDeleteFolderLayout(strParameters)
+
+  On Error Resume Next  
+  Dim strTemp, objTemp, blnFlag 
+  blnFlag = True
+  
+  strAddFolderLevel2 =getSplitValue(strParameters,"AddFolderLevel2")
+  
+  
+  ''create a folder before delete
+  strDescText =  sOpenForEditLayout(strParameters)  
+  
+  
+  intRcnt = sLayoutGridSelection(strParameters)
+  Call sEdgeProcessor()
+  Delay 2000 
+  
+    If Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_LAYOUT_PRT16")) Then
+      
+      strTemp="WPFObject(""LayoutTreeListView"")"
+      Set objGrid =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+      intRowCnt = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Count   
+      Set objCellText=objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Item(intRowCnt-1)
+      intRowNumber = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Item(intRowCnt-1).RowHandle
+      Call objCellText.Content.set_DisabledFlag(False)
+      Dealy 200    
+      strText = "Disabled flag must be set to true because Parent is set to true" 
+      Call sDiableFalgVarification(intRowNumber, strText)
+      Exit Sub     
+    End IF
+  
+  
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_LAYOUT_PRT14"))Then
+    strTemp="WPFObject(""LayoutTreeListView"")"
+    Set objGrid =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    intRowCnt = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Count  
+    Set objCellText=objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRowCnt-1)
+    Call objCellText.Content.set_DisabledFlag(False)
+    Delay 500
+    strText = "The folder must be disabled since all folders /series underneath are disabled"
+    Call sDiableFalgVarification(2, strText)
+    Exit Sub       
+    
+  End If
+
+  
+  strTemp = "WPFObject(""ContentControlEx"", ""Add Folder"", 2)"
+  Call sObjClick(strTemp)
+  Delay 1000 
+  
+  
+  If Ucase(strAddFolderLevel2) = "YES" Then  
+   strDxFileName =getSplitValue(strParameters,"DxFileName")
+    
+    strTemp="WPFObject(""LayoutTreeListView"")"
+    Set objGrid =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    intRowCnt = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Count 
+    Set objCellText=objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRowCnt-1)
+    intRowNumber = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRowCnt-1).RowHandle
+    Call objCellText.Content.set_Description(strDescText)    
+    Call objCellText.Content.set_DescriptionLocal(strDescText)  
+    If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_layout_PRT11"))Then 
+      'Verify Disabled Flag
+      Delay 2000 
+      strText = "Disabled flag must be set to true because there are no layout series attached"
+      Call sDiableFalgVarification(intRowNumber, strText)
+      Exit Sub      
+    End If
+    Call objCellText.Content.set_DisabledFlag(True)
+    Call objCellText.Content.set_DxFileNm(strDxFileName)
+    ''Upload Workspace
+    Call fUploadWorkSpace() 
+    Call sEdgeProcessor()  
+    
+    
+     'Open source module
+      Call sOpenLayout()  
+      Call sEdgeProcessor()
+  
+      'Select the Required Folder  
+      intRCnt =  sLayoutGridSelection(strParameters)
+  
+      strTemp="WPFObject(""LayoutTreeListView"")"  
+      Set objGrid =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+      intRowcnt = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Count
+      
+      For intI = 0 to intRowCnt-1
+        If Ucase(objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(IntI).Content.Description)=Ucase(strDescText) then
+          blnFlag = True
+          Exit For
+        End If
+      Next
+      
+       If blnFlag = True Then 
+          strTCRemarks = "Level3 Folder is Added"
+          log.message "Level3 Folder is Added"
+          strTestCaseResult="PASS" 
+        Else
+          strTCRemarks = "Level3 Folder is not Added"
+          log.message "Level3 Folder is not Added"
+          strTestCaseResult="FAIL"            
+        End if
+        Exit sub       
+  End If
+  
+  strTemp="WPFObject(""LayoutTreeListView"")"
+  Set objGrid =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  intRowCnt = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Count   
+  Set objCellText=objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Item(intRowCnt-1)
+  intRowNumber = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Item(intRowCnt-1).RowHandle
+  Call objCellText.Content.set_Description(DescText)    
+  Call objCellText.Content.set_DescriptionLocal(DescText)
+  
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_layout_PRT15"))Then 
+      'Verify Disabled Flag
+      Delay 2000    
+      strText ="Disabled flag must be set to true because there are no layout series attached "  
+      Call sDiableFalgVarification(intRowNumber, strText)     
+      Exit Sub      
+    End If
+  
+  Call objCellText.Content.set_DisabledFlag(True)
+  
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_layout_PRT13"))Then     
+    Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 3).WPFObject("LayoutTreeListControl").WPFObject("LayoutTreeListView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", Cint(intRowNumber)+1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WPFObject("InplaceBaseEdit", "", 1).WPFObject("EditorControlStub", "", 1).WPFObject("StateIndicatorControl", "", 1).WPFObject("LampRedStatePresentationControl", "", 1)
+    If objTemp.Exists = False Then 
+      strTCRemarks = "Red Dot Validation is not displayed as Disable Flag is set to True" 
+      log.message "Red Dot Validation is not displayed as Disable Flag is set to True" 
+      strTestCaseResult="PASS" 
+    Else
+      strTCRemarks = "Red Dot Validation is  displayed even after Disable Flag is set to True" 
+      log.message "Red Dot Validation is  displayed even after Disable Flag is set to True" 
+      strTestCaseResult="FAIL"      
+    End If
+    
+    'clean Up
+      Call sCloseWithYes(1299)
+      Delay 1000
+      Call sLayoutWorkSpacevwr() 
+      Exit Sub
+      
+  End If
+  
+  
+  
+  
+  ''Upload Workspace
+  Call fUploadWorkSpace() 
+  Call sEdgeProcessor() 
+  
+  
+  ''Open Folder for Delete Folder
+  Call sOpenForEditLayout(strParameters)  
+  IntRCnt = sLayoutGridSelection(strParameters)
+  
+  strTemp="WPFObject(""LayoutTreeListView"")"  
+  Set objGrid =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  
+  intRowCnt = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Count
+  
+  For intI = 0 to intRowCnt-1
+    If Ucase(objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Item(intI).Content.Description)=Ucase(strDescText) then
+          ''objGrid.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).ExpandAll      
+          intRow =objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Item(intI).get_RowHandle          
+          Call sSelcetLayoutLevel(objGrid, intRow)
+          Call sEdgeProcessor()
+          strTemp = "WPFObject(""ContentControlEx"", ""Delete Folder"", 2)"
+          Call sObjClick(strTemp)
+          Delay 1000 
+          Call Aliases.EdgeClient.HwndSource_WindowContentHolder6.WindowContentHolder.NonLogicalDecorator.ThemedManagedContentPresenter.Grid.DXMessageBox.Click(245, 58)
+          Delay 1000 
+          Exit For             
+      End IF
+  Next
+  
+    
+  ''Upload Workspace
+  Call fUploadWorkSpace() 
+  Call sEdgeProcessor()
+  
+   'Open source module
+  Call sOpenLayout()  
+  Call sEdgeProcessor()
+  
+  'Select the Required Folder  
+  intRCnt =  sLayoutGridSelection(strParameters)
+  
+  strTemp="WPFObject(""LayoutTreeListView"")"  
+  Set objGrid =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  
+  intRowCnt = objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Count
+  
+  For intI = 0 to intRowCnt-1
+    If Ucase(objGrid.Nodes_2.Item(intRcnt(0)).Nodes.Item(intRcnt(1)).Nodes.Item(intRcnt(2)).Nodes.Item(intI).Content.Description)=Ucase(strDescText) then
+      blnFlag = False
+      Exit For
+    End If
+  Next
+  
+  If blnFlag = True Then 
+    strTCRemarks = "Level4 Folder is deleted"
+    log.message "Level4 Folder is deleted"
+    strTestCaseResult="PASS" 
+  Else
+    strTCRemarks = "Level4 Folder is not deleted"
+    log.message "Level4 Folder is not deleted"
+    strTestCaseResult="FAIL"            
+  End if
+
+
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDeleteFolderLayout', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+
+'######################################################################################################################################
+
+''Fucntion to veify Disable Flag
+
+Function sDiableFalgVarification(intRowNumber, strText)
+
+  on Error Resume Next
+  
+  Delay 2000       
+      Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 3).WPFObject("LayoutTreeListControl").WPFObject("LayoutTreeListView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", Cint(intRowNumber)+1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WPFObject("InplaceBaseEdit", "", 1).WPFObject("EditorControlStub", "", 1).WPFObject("StateIndicatorControl", "", 1).WPFObject("LampRedStatePresentationControl", "", 1)
+      If objTemp.Exists Then 
+          objTemp.HoverMouse
+          Delay 200
+          Set PicObj = Utils.Picture
+          Set PicObj = Sys.Desktop.ActiveWindow.Picture() 
+          PicObj.SavetoFile(strLogFolder & "Screenshots\" & strTestCase_No &  "_" & picCount & ".jpg") 
+          strTCRemarks =  strText & "  message displayed" 
+          log.message strText & "  message displayed" 
+          strTestCaseResult="PASS" 
+      Else
+          PicObj.SavetoFile(strLogFolder & "Screenshots\" & strTestCase_No &  "_" & picCount & ".jpg") 
+          strTCRemarks = strText & "  message is not displayed" 
+          log.message strText & "  message is not displayed" 
+          strTestCaseResult="FAIL"      
+      End If
+      
+      'clean Up
+      Call sCloseWithYes(1299)
+      Delay 1000
+      Call sLayoutWorkSpacevwr() 
+ 
+ 
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDiableFalgVarification', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Function
+
+'######################################################################################################################################33
+'TestCases to verify Copyfolder and Paste Above, below
+
+Sub sCopyLayoutFolder(strParameters)
+
+  On Error Resume Next
+  Dim strTemp, objGridControl, objTemp, blnFlag, newSourceName, intTotNodeCnt, intSeriesID(0), strSourceName(3)
+  Dim IntRowNumber(4)
+ 
+  strLevel1=getSplitValue(strParameters,"Level1")
+  strLevel2=getSplitValue(strParameters,"Level2") 
+  strLevel3=getSplitValue(strParameters,"Level3")
+  strLevel4=getSplitValue(strParameters,"Level4")
+     
+  strPasteOption = getSplitValue(strParameters,"PASTEOPTION")
+  strCopyOption= getSplitValue(strParameters,"COPYOPTION")  
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES")
+  strFolderCount=getSplitValue(strParameters,"FolderCount")  
+  strLevel = getSplitValue(strParameters,"LEVEL")
+  strCategory = getSplitValue(strParameters,"Category")
+  blnFlag = False
+  
+  
+  Redim intSeriesID(Cint(strFolderCount))
+  
+  ''Select  level2 layout folder  and 'Open for Edit(layout)'
+  Call sOpenForEditLayout(strParameters)  
+  Call sEdgeProcessor()
+  Delay 2000 
+  
+    
+  'Expand the layout tree then select level4 layout folder
+  IntRowNumber(0) = sLayoutLevel1GridSelection(strParameters)  
+  IntRowNumber(1) = sLayoutLevel2GridSelection(strParameters,IntRowNumber(0))
+  IntRowNumber(2) = sLayoutLevel3GridSelection(strParameters,IntRowNumber(0),IntRowNumber(1))  
+  IntRowNumber(3)=  sLayoutLevel4GridSelection(strParameters,IntRowNumber(0),IntRowNumber(1),IntRowNumber(2))
+  Call sEdgeProcessor()       
+  
+   
+   Set objSeriesPanel = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("LayoutSeriesViewControl").WPFObject("BarManager", "", 1).WPFObject("DockPanel", "", 1).WPFObject("LayoutSeriesGridControl").WPFObject("LayoutSeriesTableView")
+   
+  
+  'Select the Required Number of rows to copy. 
+  X=0
+  Y=0 
+   Delay 2000, "Pls Wait ..."
+    If strFolderCount >1 Then       
+        For I = 1 to strFolderCount-1          
+          If Ucase(strWithSeries) = Ucase("Yes") Then
+            intSeriesID(X) = objSeriesPanel.DataContext.Item(Y).SeriesId  
+             X=X+1   
+           End IF           
+            SYS.Keys("![Down]") 
+            Delay 1000
+            Select Case strLevel
+                   Case 2
+                    IntRowNumber(1) = IntRowNumber(1)+1
+                    intRowCount = IntRowNumber(1) 
+                    'msgbox intRowCount
+                   Case 3                            
+                    IntRowNumber(2) = IntRowNumber(2)+1
+                    intRowCount = IntRowNumber(2)  
+                   Case 4              
+                    IntRowNumber(3) = IntRowNumber(3)+1
+                    intRowCount = IntRowNumber(3)
+                   'msgbox intRowCount         
+            End Select       
+        Next  
+    ElseIf strFolderCount = 1 Then 
+          If Ucase(strWithSeries) = Ucase("Yes") Then
+           intSeriesID(X) = objSeriesPanel.DataContext.Item(Y).SeriesId  
+           'X=X+1
+         End IF 
+         Select Case strLevel
+               Case 2
+                 intRowCount = IntRowNumber(1) 
+               Case 3
+                  intRowCount = IntRowNumber(2) 
+               Case 4
+                  intRowCount = IntRowNumber(3)                                 
+         End Select         
+    End If
+    
+    'msgbox intRowCount  
+    
+    'Get the Row Count as per Paste above /Below               
+    If strFolderCount > 0 And (Ucase(strCategory) = Ucase("Below"))  Then
+      Select Case strLevel
+             Case 2
+                  IntRowNumber(1) = IntRowNumber(1)+1
+                  intRowCount = IntRowNumber(1)
+             Case 3
+                  IntRowNumber(2) = IntRowNumber(2)+1
+                  intRowCount = IntRowNumber(2)
+                  'msgbox intRowCount  
+             Case 4
+                  IntRowNumber(3) = IntRowNumber(3)+1
+                  intRowCount = IntRowNumber(3)               
+      End Select             
+    ElseIf strFolderCount < 0 Then 
+       strTCRemarks = "'Copy' and 'Paste Below' Fucntionality requires atleast one folder to copy"
+       strTestCaseResult="FAIL" 
+       Exit Sub 
+    End If
+    
+    'Copy and Paste selected Folder
+   Call sCopyPaste(strCopyOption,strPasteOption)
+   Delay 500
+   P= 0
+   
+   strTemp = "WPFObject(""LayoutTreeListView"")"
+   Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)  
+   
+   'Amend The Description and Description Local Name   
+   If Ucase(strCategory) = Ucase("Above") OR  Ucase(strCategory) = Ucase("Below")Then
+    For J = 0 to strFolderCount-1 
+        'intNewNumber = Minute(Time) + Second(Time) + J 
+          DescText=Replace(aqDateTime.Now,"/","-")
+          intNewNumber =Replace(DescText,":","_")         
+          intNewNumber1 = left(intNewNumber,1)+ Minute(Time) + Second(Time) + J &"-" &intNewNumber
+        If strLevel = 2 Then          
+            intLen= Len(strLevel2Source)-Instr(strLevel2Source, "-")             
+            newSourceName =  Replace(strLevel2Source ,Right(strLevel2Source ,intLen), intNewNumber1)       
+            Delay 200       
+            Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Content.set_Description(newSourceName)
+            Delay 200  
+            Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Content.set_DescriptionLocal(newSourceName)
+            Delay 200  
+            Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Content.set_SourceCode(newSourceName) 
+            Delay 200  
+            strName(P) =  newSourceName 
+            IntRowNumber(1) = IntRowNumber(1)+1 
+            P=P+1
+            Delay 500         
+        ElseIf  strLevel = 3 Then 
+            intLen= Len(strLevel3Source)-Instr(strLevel3Source, "-")
+            newSourceName =  Replace(strLevel3Source ,Right(strLevel3Source ,intLen), intNewNumber1) 
+            Delay 200
+            Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Content.set_Description(newSourceName)
+            Delay 200
+            Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Content.set_DescriptionLocal(newSourceName) 
+            strName(P) =  newSourceName 
+            IntRowNumber(2) = IntRowNumber(2)+1 
+            P=P+1
+            Delay 500     
+        ElseIf  strLevel = 4 Then 
+            intLen= Len(strLevel4)-Instr(strLevel4, "-")
+            newSourceName =  Replace(strLevel4 ,Right(strLevel4 ,intLen), intNewNumber1) 
+            Delay 200
+            Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntRowNumber(3)).Content.set_Description(newSourceName)
+            Delay 200
+            Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntRowNumber(3)).Content.set_DescriptionLocal(newSourceName) 
+            strName(P) =  newSourceName 
+            IntRowNumber(3) = IntRowNumber(3)+1 
+            P=P+1
+            Delay 500    
+       End If               
+    Next
+   End IF
+      
+   If Ucase(strWithSeries) = Ucase("Yes") Then   
+       'msgbox strSourceName(0)
+      
+       intTotNodeCnt=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Count  
+       For intK=0 to intTotNodeCnt-1  
+          If Ucase(objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(intK).Content.Description)=Ucase(strName(0)) then
+          intRow=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(intK).get_RowHandle
+            objGridControl.Keys "^[Home]"
+            Call objGridControl.ClearSelectionCore
+            Call objGridControl.FocusViewAndRow(objGridControl,intRow)
+            objGridControl.SetFocusOnCurrentItem        
+            Call objGridControl.SelectRowCore(intRow) 
+            Delay 2000, "Please Wait"         
+            'Call objGridControl.SelectRowCore(intRow-1)
+            'IntRowNumber(1) =intJ        
+            Exit For
+        End If 
+       Next
+   
+    newSeriesCount = 0 
+    
+     For I = 0 to strFolderCount-1             
+              intNewSeriesID(I) = objSeriesPanel.DataContext.Item(Y).SeriesId
+               If intNewSeriesID(I) = intSeriesID(I) Then
+                  newSeriesCount = newSeriesCount+1    
+                  SYS.Keys("[Down]") 
+                  Delay 1000                     
+                End If
+          Next        
+       
+         Delay 200
+         If newSeriesCount = Cint(strFolderCount) Then 
+           strTCRemarks = "All Series are Copied Correctly" & "<br />" 
+           log.message "All Series are Copied Correctly" 
+           strTestCaseResult="PASS"
+        Else
+          strTCRemarks = "All Series are Not Copied Correctly" & "<br />" 
+          strTestCaseResult="FAIL" 
+          Exit Sub  
+        End If
+      
+   End If
+    'Save and Verify Copied/Cut Folder
+   Call sSaveAndVerifyCopyLayout(strParameters,IntRowNumber)
+ 
+   If Err.Number > 0 Then
+    Log.Warning("Error in 'sCopyLayoutFolder', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+    
+  
+End Sub
+'###############################################################################################################################
+
+'Fucntion to selvet level1 in layout module
+
+Function sLayoutLevel1GridSelection(strParameters)
+'Function sLayoutLevel1GridSelection()
+  On Error Resume Next   
+  Dim strTemp, objGridControl, IntCount
+   
+   strLevel1=getSplitValue(strParameters,"Level1")
+   'strLevel1 = "dX Non-Asia Database (Current Eng Version)"
+   
+   strTemp = "WPFObject(""LayoutTreeListView"")"
+   Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   
+   'Expanding First Node
+   intTotNodeCnt=objGridControl.Nodes_2.Count  
+   For intI=0 to intTotNodeCnt-1         
+     If Ucase(objGridControl.Nodes_2.Item(intI).Content.Description)=Ucase(strLevel1) then
+        'objGridControl.Nodes_2.Item(intI).ExpandAll               
+         intRow=objGridControl.Nodes_2.Item(intI).get_RowHandle         
+         Call sSelcetLayoutLevel(objGridControl, intRow)         
+         Delay 200           
+      Exit For
+    End If
+   Next 
+   sLayoutLevel1GridSelection = IntI
+   Set objGridControl = Nothing   
+   
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sLayoutLevel1GridSelection', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+   
+End Function
+
+
+'###############################################################################################################################
+
+'Fucntion to selvet level2 in layout module
+Function sLayoutLevel2GridSelection(strParameters,intI)
+'Function sLayoutLevel2GridSelection()
+  On Error Resume Next   
+  Dim strTemp, objGridControl, IntCount 
+  
+   strLevel2=getSplitValue(strParameters,"Level2") 
+   strMultiLevel =  getSplitValue(strParameters,"MultiLevel") 
+   
+   'strLevel2 = "CopyFolder"   
+   strTemp = "WPFObject(""LayoutTreeListView"")"
+   Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   
+     
+    'Selceting the Second Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Count
+   For intJ=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Content.Description)=Ucase(strLevel2) then        
+        objGridControl.Nodes_2.Item(intI).ExpandAll       
+        intRow=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).get_RowHandle
+        Call sSelcetLayoutLevel(objGridControl, intRow)
+         If  Ucase(Trim(strMultiLevel)) = Ucase(Trim("Yes"))Then   
+           SYS.Keys("!") 
+           Call objGridControl.SelectRowCore(intRow+1)
+         End If        
+        Delay 200     
+      Exit For
+    End If
+   Next
+   
+   'msgbox IntJ
+   sLayoutLevel2GridSelection = IntJ
+   Set objGridControl = Nothing 
+  
+   If Err.Number > 0 Then
+    Log.Warning("Error in 'sLayoutLevel2GridSelection', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Function
+'##########################################################################################################################
+'Fucntion to selvet level3 in layout module
+Function sLayoutLevel3GridSelection(strParameters, IntI, IntJ)
+  On Error Resume Next   
+  Dim strTemp, objGridControl
+  
+  strLevel3=getSplitValue(strParameters,"Level3") 
+  strLevel3FisrtFolder=getSplitValue(strParameters,"Level3FisrtFolder") 
+  If strLevel3FisrtFolder <> "" And strLevel3 = "" Then 
+    strLevel3 = strLevel3FisrtFolder
+  End If
+  
+  strMultiLevel =  getSplitValue(strParameters,"MultiLevel") 
+   
+  'strLevel3 = "Level3Folder2"
+  
+   strTemp = "WPFObject(""LayoutTreeListView"")"
+   Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Selecting the Third Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Count        
+  For intK=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Content.Description)=Ucase(strLevel3) then
+      objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).ExpandAll      
+          intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).get_RowHandle          
+          Call sSelcetLayoutLevel(objGridControl, intRow)         
+          Dealy 200       
+      Exit For
+    End If
+   Next
+   
+   'msgbox IntK
+   sLayoutLevel3GridSelection = IntK
+   Err.Clear
+   Set objGridControl = Nothing        
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sLayoutLevel3GridSelection', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Function 
+
+
+
+'##########################################################################################################################
+'Fucntion to selvet level4 in layout module
+Function sLayoutLevel4GridSelection(strParameters,IntI,IntJ,IntK)
+  On Error Resume Next   
+  Dim strTemp, objGridControl
+  
+  strLevel4=getSplitValue(strParameters,"Level4") 
+  strMultiLevel =  getSplitValue(strParameters,"MultiLevel") 
+  'strLevel4 = "Level4Folder3"
+  
+   strTemp = "WPFObject(""LayoutTreeListView"")"
+   Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Selecting the Third Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Count        
+  For intL=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(intL).Content.Description)=Ucase(strLevel4) then
+      objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(intL).ExpandAll      
+      intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(intL).get_RowHandle          
+      Call sSelcetLayoutLevel(objGridControl, intRow)   
+      Delay 200
+      If  Ucase(Trim(strMultiLevel)) = Ucase(Trim("Yes"))Then   
+           SYS.Keys("!") 
+           Call objGridControl.SelectRowCore(intRow+1)
+         End If        
+       Delay 200       
+      Exit For
+    End If
+   Next
+   
+   'msgbox IntL
+   sLayoutLevel4GridSelection = IntL
+   Set objGridControl = Nothing        
+ 
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sLayoutLevel4GridSelection', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Function 
+
+'######################################################################################################################################
+
+'Procedure to Select Multilevel
+
+Sub sLevel4Selector()
+
+  On Error Resume Next
+  Dim Row(4)
+  Row(0) = sLayoutLevel1GridSelection(strParameters) 
+  Row(1) = sLayoutLevel2GridSelection(strParameters,Row(0)) 
+  Row(2) = sLayoutLevel3GridSelection(strParameters,Row(0),Row(1)) 
+  Row(3)=  sLayoutLevel4GridSelection(strParameters,Row(0),Row(1),Row(2)) 
+  Delay 2000
+End Sub
+
+
+
+'#####################################################################################################################################
+Sub sSaveAndVerifyCopyLayout(strParameters,IntRowNumber)
+
+On Error Resume Next
+Delay 2000, "Please Wait"
+
+    Dim intTotNodeCnt, strFolderCount ,strText , strCategory , strLevel
+
+    strFolderCount=getSplitValue(strParameters,"FolderCount")
+    strText =getSplitValue(strParameters,"DISPLAYTEXT") 
+    strCategory =getSplitValue(strParameters,"CATEGORY")
+    strLevel = getSplitValue(strParameters,"LEVEL")   
+    
+    blnFlag = False
+
+
+   'Save the Workspace
+    Call fSaveWorkspace() 
+    Call sEdgeProcessor()         
+    Call sCloseSWV() 
+    
+   ' Open the Saved Workspace from Source Workspace Viewer         
+    Call sOpenLayoutViewrWS()
+    Call sEdgeProcessor()  
+    Delay 2000       
+  
+    strTemp="WPFObject(""LayoutTreeListView"")"      
+    Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True) 
+    
+   strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)" 
+   call sObjClick(strTemp)
+       
+    'Verify the copy and paste changed have been saved.
+    P= 0
+    If Ucase(strCategory) = Ucase("Above") OR  Ucase(strCategory) = Ucase("Below")Then  
+    Select Case strLevel 
+        Case 2
+          intTotNodeCnt=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Count
+          For intJ = 0 to intTotNodeCnt-1
+             If Ucase(objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(intJ).Content.Description)= Ucase(strName(P)) Then
+                blnFlag= True  
+                DescText = strName(P)
+                P = P+1  
+                Delay 200
+             End If
+          Next
+        Case 3
+          intTotNodeCnt=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Count
+           For intK = 0 to intTotNodeCnt-1
+             If Ucase(objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(intK).Content.Description)= Ucase(strName(P))Then 
+                 blnFlag= True  
+                 DescText = strName(P)
+                 P = P+1  
+                 Delay 200        
+              End IF 
+            Next   
+        Case 4
+          intTotNodeCnt=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Count
+           For intK = 0 to intTotNodeCnt-1
+             If Ucase(objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(intK).Content.Description)= Ucase(strName(P))Then 
+                 blnFlag= True  
+                 DescText = strName(P) 
+                 P =P+1               
+                 Delay 200 
+                 'if intK = strFolderCount then 
+                  'Exit For
+                 'End If        
+              End IF 
+               
+            Next 
+          End Select    
+     End If 
+    
+      intTotNodeCnt=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Count
+      If Ucase(strCategory) = Ucase("Inside") Then      
+        For intK = 0 to intTotNodeCnt-1
+           If Ucase(objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(intK).Content.Description)= Ucase(strName(P)) Then 
+              blnFlag= True  
+              DescText = strName(P)
+              P = P+1  
+              Delay 200         
+          End IF   
+        Next
+       End IF
+       
+     
+    'Verify Modified Rows are displayed or Not
+      'msgbox strName(P-1)
+      If blnFlag= True And P = CInt(strFolderCount)  Then 
+        strTCRemarks = strTCRemarks & strText & " Fucntionality is working as expected"
+        strTestCaseResult="PASS"
+      Else
+         strTCRemarks = strTCRemarks & strText & " Fucntionality is not working as expected"
+         strTestCaseResult="FAIL"  
+      End If 
+  
+'sSaveAndVerifyCopyLayout
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sSaveAndVerifyCopyLayout', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+
+'********************************************************************************************************************************************************************8
+'Function to Open Workspace form Layout workspace viwer
+
+Sub sOpenLayoutViewrWS()
+
+  On Error Resume Next
+  
+  'Click on Layout Workspace Viewr Butto   
+   strTemp = "WPFObject(""ContentControl"", ""Layout Workspace"", 1)"
+   Call sObjClick(strTemp)
+   Call sEdgeProcessor()
+      
+   ''Selecting Workspace to open 
+   strTemp="WPFObject(""PendingChangeGridControl"")"
+   Set objGridControl=Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+   
+   Call objGridControl.ClickCell(0, "Workspace Name")
+   Delay 100
+   
+   strTemp = "WPFObject(""ContentControlEx"", ""Open Workspace"", 2)"
+   Call sObjClick(strTemp)   
+   Call sEdgeProcessor()
+   Delay 500 
+   Call sCloseSWV() 
+'sOpenLayoutViewrWS
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenLayoutViewrWS', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If    
+End Sub
+
+
+
+''****************************************************************************************************************************************************************
+'Testcase :TC_Layout_PRT20/*:Verify Copy Folder and Paste Above/Below/Inside Layout folder/Folders
+
+Sub sDiffentLevel3CopyLayoutFolder(strParameters)
+'Sub sDiffentLevel3CopyLayoutFolder()
+
+  On Error Resume Next
+   Dim strTemp, objGridControl, objTemp, blnFlag, newSourceName,  intTotNodeCnt
+   Dim IntRowNumber(4)
+  
+  
+   strLevel1 = getSplitValue(strParameters,"SOURCE")
+   strLevel2 = getSplitValue(strParameters,"Level2Source")   
+   strMultiLevel = getSplitValue(strParameters,"MultiLevel") 
+   strCategory =getSplitValue(strParameters,"CATEGORY") 
+    
+   'Open The Layout Module
+    Call sOpenLayout() 
+    Call sEdgeProcessor()
+    Delay 2000 , "Please wait Layout Form is loading"
+  
+    'Call sGridSelection(strParameters) 
+    
+    strTemp = "WPFObject(""LayoutTreeListView"")"
+    Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    
+    'Expand the layout tree then select level4 layout folder
+     intTotNodeCnt=objGridControl.Nodes_2.Count  
+     For intI=0 to intTotNodeCnt-1         
+     If Ucase(objGridControl.Nodes_2.Item(intI).Content.Description)=Ucase(strLevel1)  Then
+         intRow=objGridControl.Nodes_2.Item(intI).get_RowHandle         
+         Call sSelcetLayoutLevel(objGridControl, intRow)         
+         Delay 200           
+         Exit For
+     End If
+    Next 
+   IntRowNumber(0) = IntI   
+   Sys.Keys "[Enter]"     
+   Call sEdgeProcessor()
+   Delay 2000 
+   
+   
+   'Select the two Level2 Folder 
+   
+   intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Count
+   For intJ=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Content.Description)=Ucase(strLevel2) then  
+        intRow=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).get_RowHandle
+        Call sSelcetLayoutLevel(objGridControl, intRow)
+         If  Ucase(Trim(strMultiLevel)) = Ucase(Trim("Yes"))Then   
+           SYS.Keys("!") 
+           Call objGridControl.SelectRowCore(intRow+1)
+         End If        
+        Delay 200     
+      Exit For
+    End If
+   Next
+   IntRowNumber(1) = IntJ 
+   
+    
+   'Click on Open for Edit
+   Call fClickNewWorkSpace_Layout() 
+      
+    
+   If strCategory = "Inside" then 
+    Call fTwoLevel2RowSelectionForInside(strParameters)
+   Else
+    'Perform Copy First Level2->Level3 folder to second Level2->Level3 Folder   
+     strTCRemarks1 =  fTwoLevel2RowSelection(strParameters)
+   End If 
+   
+   'msgbox strTCRemarks
+  'Clean Up
+   Call sCloseSWV()     
+   'Call sCloseWithYes(1299)    
+   Delay 1000
+   Call sLayoutWorkSpacevwr()     
+   Set objGridControl = Nothing 
+   strTCRemarks = strTCRemarks1    
+
+'sDiffentLevel3CopyLayoutFolder
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDiffentLevel3CopyLayoutFolder', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Sub 
+
+
+''****************************************************************************************************************************************************************
+'Function to Open for Edit Layout Module
+Function fClickNewWorkSpace_Layout()
+  
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+  DescText=Replace(aqDateTime.Now,"/","-")
+  DescText=Replace(DescText,":","_") 
+  ''strDescText = DescText
+  
+  ''Clicking on "New Workspace" Button and selecting "Open for Edit(Souce)" option 
+  strTemp="WPFObject(""ContentControlEx"", ""New Workspace"", 2)"  
+  Set objNewWorkspace=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  Call sObjClick(strTemp)
+  strTemp="WPFObject(""ContentControlEx"", ""Open For Edit"", 2)"  
+  Call sObjClick(strTemp)
+  'Call sEdgeProcessor()
+  
+ ''Waiting for Workspace Name prompt
+  strTemp="WPFObject(""HwndSource: WorkspaceNamePrompt"", ""Please provide a new Workspace Name"")"
+  Set objNewWrkSpace_Name=Sys.Process("EdgeClient").WaitChild(strTemp,60000)
+    If objNewWrkSpace_Name.Exists = True then
+      strTemp="WPFObject(""ChangeNameTextEdit"")"
+      ''Entering Workspace Name
+      Set objNewWrkSpace_Txtbox=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+        If objNewWrkSpace_Txtbox.Exists = True then          
+          objNewWrkSpace_Txtbox.Click
+          objNewWrkSpace_Txtbox.Text=DescText
+          ''Clicking on Ok Button 
+          strTemp="WPFObject(""OkButton"")"
+          Set objNewWrkSpace_okbtn=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+          If objNewWrkSpace_okbtn.Exists = True then
+            objNewWrkSpace_okbtn.Click 
+            Call sEdgeProcessor()
+            Call sCloseSWV()  
+          End If
+        End If
+    End If
+    
+ 
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fClickNewWorkSpace_Layout', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Function
+''****************************************************************************************************************************************************************
+
+'TestCases : TC_layout_PRT24 -To verify Copyfolder and Paste inside
+
+
+Sub sCopyPasteInsideLayout(strParameters)
+'Sub sCopyPasteInsideLayout()
+
+On Error Resume Next
+  Dim strTemp, objGridControl, objTemp, blnFlag, newSourceName, intTotNodeCnt, intSeriesID(0), strSourceName(3)
+  Dim IntRowNumber(4)
+ 
+  strLevel1=getSplitValue(strParameters,"Level1")
+  strLevel2=getSplitValue(strParameters,"Level2") 
+  strLevel3=getSplitValue(strParameters,"Level3")
+  strLevel4=getSplitValue(strParameters,"Level4")
+     
+  strPasteOption = getSplitValue(strParameters,"PASTEOPTION")
+  strCopyOption= getSplitValue(strParameters,"COPYOPTION")  
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES")
+  strFolderCount=getSplitValue(strParameters,"FolderCount")
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES")
+  strLevel = getSplitValue(strParameters,"LEVEL")
+  strCategory = getSplitValue(strParameters,"Category")
+  blnFlag = False
+  
+  
+  Redim intSeriesID(Cint(strFolderCount))
+  
+  ''Select  level2 layout folder  and 'Open for Edit(layout)'
+  Call sOpenForEditLayout(strParameters)  
+  Call sEdgeProcessor()
+  Delay 2000 
+  
+    
+  'Expand the layout tree then select level4 layout folder
+  IntRowNumber(0) = sLayoutLevel1GridSelection(strParameters) 
+  IntRowNumber(1) = sLayoutLevel2GridSelection(strParameters,IntRowNumber(0)) 
+  IntRowNumber(2) = sLayoutLevel3GridSelection(strParameters,IntRowNumber(0),IntRowNumber(1))  
+  IntRowNumber(3)=  sLayoutLevel4GridSelection(strParameters,IntRowNumber(0),IntRowNumber(1),IntRowNumber(2))
+  
+  'Copy and Paste selected Folder
+  Call  fCopy(strCopyOption)
+  Call sEdgeProcessor()
+   
+  'Select the Lavel 3 Folder to paste Inside
+  IntRowNumber(2) = sLayoutLevel3GridSelection(strParameters,IntRowNumber(0),IntRowNumber(1))  
+  
+  'Paste Indise
+  Call  fPaste(strPasteOption)
+  Call sEdgeProcessor()
+  
+  strTemp = "WPFObject(""LayoutTreeListView"")"
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  intTotNodeCnt=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Count  
+  
+  DescText=Replace(aqDateTime.Now,"/","-")
+  intNewNumber =Replace(DescText,":","_")         
+  intNewNumber1 = left(intNewNumber,1)+ Minute(Time) + Second(Time) + J &"-" &intNewNumber 
+  intLen= Len(strLevel4)-Instr(strLevel4, "-")             
+  newSourceName =  Replace(strLevel4 ,Right(strLevel4 ,intLen), intNewNumber1)       
+  Delay 200       
+  Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(intTotNodeCnt-1).Content.set_Description(newSourceName)
+  Delay 200
+  Call objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(intTotNodeCnt-1).Content.set_DescriptionLocal(newSourceName) 
+  strName(P) =  newSourceName 
+  P=P+1
+  Delay 500         
+  
+  'Save and Verify Copied/Cut Folder
+  Call sSaveAndVerifyCopyLayout(strParameters,IntRowNumber)  
+  Set objGridControl = Nothing 
+  
+
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sCopyPasteInsideLayout', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+  
+End Sub
+
+
+'######################################################################################################################################
+'Fucntion to Copy And Paste Inside to the differnt level Folder
+
+Sub sTwoLevel2RowSelectionForInside(strParameters)
+'Function fTwoLevel2RowSelectionForInside()
+  On Error Resume Next
+  Dim strTemp, objGridControl, IntRowNumber(4), strLevel3Category, strLevel2Category , intSeriesID(3), strSourceName(3), intNewSeriesID(3)
+  Dim intLevel2Source2RowNumber(10)
+  
+  strSource_Name =getSplitValue(strParameters,"SOURCE")
+  strLevel2Source1 =getSplitValue(strParameters,"Level2Source1")
+  strLevel2Source2 =getSplitValue(strParameters,"Level2Source2")
+  strLevel3Source1 =getSplitValue(strParameters,"Level3Source1")
+  strLevel3Source2 =getSplitValue(strParameters,"Level3Source2")
+  strLevel4Source1 = getSplitValue(strParameters,"Level4Source1")
+  strLevel3Category = getSplitValue(strParameters,"Level3Category")
+  strCopyOption  =getSplitValue(strParameters,"COPYOPTION") 
+  strPasteOption  = getSplitValue(strParameters,"PASTEOPTION")
+  strCategory =getSplitValue(strParameters,"CATEGORY")   
+  strFolderCount =getSplitValue(strParameters,"FolderCount")
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES")
+  strLayoutDV = getSplitValue(strParameters,"LayoutDV")
+  strButton = getSplitValue(strParameters,"Button")
+  
+  
+  
+  ''Select  level2 layout folder  and 'Open for Edit(layout)'
+  Call sOpenForEditLayout(strParameters)  
+  Call sEdgeProcessor()
+  Delay 2000 
+     
+'  strEnvi = "Edge ( US Integration )"   
+'  strSource_Name="dX Non-Asia Database (Current Eng Version)"
+'  strLevel2Source1="Level2-CopyFolder-1"
+'  strLevel2Source2="Level2-CopyFolder-2"
+'  strLevel3Source1="Level3-CopyFolder-3"
+'  strLevel3Source2="Level3-CopyFolder-4"
+'  strLevel4Source1="Level4-CopyFolder-1"
+'  strLevel3Category="Select"
+'  strCopyOption="WPFObject(""ContentControlEx"", ""Copy Folder Only"", 2)"
+'  strPasteOption="WPFObject(""ContentControlEx"", ""Paste Inside"", 2)"
+'  strCategory="Inside"
+'  strFolderCount="1"
+'  strWithSeries="Yes"
+'  strLayoutDV = "Yes"
+'  strButton = "WPFObject(""LayoutTreeListView"")"
+    
+     
+'  strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"
+'  Call sObjClick(strTemp)
+'  Delay 2000
+'     
+  strTemp = "WPFObject(""LayoutTreeListView"")"
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+     
+  'Expand the layout tree then select level4 layout folder  IntRowNumber(0) = fGridone(strTemp,strSource_Name ) 
+  IntRowNumber(0) = fGridone(strTemp,strSource_Name )
+  IntRowNumber(1) = fGridTwo(strTemp,strLevel2Source1 ,IntRowNumber(0))  
+  IntRowNumber(2) = fGridThree(strTemp,strLevel3Source1 ,IntRowNumber(0), IntRowNumber(1))
+  IntRowNumber(3) =fGridFour(strTemp,strLevel4Source1 ,IntRowNumber(0), IntRowNumber(1),IntRowNumber(2))  
+  Call sEdgeProcessor() 
+    
+  'Copy Folder
+  Call  fCopy(strCopyOption)
+  Call sEdgeProcessor()
+  
+  'Select the other Level3 Folder
+  IntRowNumber(2) = fGridThree(strTemp,strLevel3Source2 ,IntRowNumber(0), IntRowNumber(1))
+  'IntRowNumber(3) =fGridFour(strTemp,strLevel4Source1 ,IntRowNumber(0), IntRowNumber(1),IntRowNumber(2))
+  
+  'Paste Folder
+  Call  fPaste(strPasteOption)
+  Call sEdgeProcessor()
+  strFisrtLevel4Folder = objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntRowNumber(3)).Content.Description
+  
+  
+  If strFisrtLevel4Folder = strLevel4Source1 Then 
+    strName(0) =  strFisrtLevel4Folder   
+    strTCRemarks = "'"& strFisrtLevel4Folder &"'  dispalyed in Layout Module after Coping the workspace"
+    strTestCaseResult="PASS"
+  Else
+     strTCRemarks = "'"& strFisrtLevel4Folder &"'   dispalyed in Layout Module after Coping the workspace"
+     strTestCaseResult="FAIL"   
+  End If
+ 
+  
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sTwoLevel2RowSelectionForInside', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+
+
+
+
+'###############################################################################################################################
+'Fucnction to select First Row
+Function fGridone(strTemp,strLevel1 )
+  
+  'Function sLayoutLevel1GridSelection()
+  On Error Resume Next   
+  Dim objGridControl, IntCount
+  
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+   'Expanding First Node
+   intTotNodeCnt=objGridControl.Nodes_2.Count  
+   For intI=0 to intTotNodeCnt-1         
+     If Ucase(objGridControl.Nodes_2.Item(intI).Content.Description)=Ucase(strLevel1) then
+         objGridControl.Nodes_2.Item(intI).ExpandAll                       
+         intRow=objGridControl.Nodes_2.Item(intI).get_RowHandle         
+         Call sSelcetLayoutLevel(objGridControl, intRow)   
+'         intRowControl =intRow +1 
+'         Call objGridControl.WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRowControl).WPFObject("RowMarginControl", "", 1).Click(12, 10)
+        Delay 200           
+      Exit For
+    End If
+   Next 
+   fGridone = IntI
+   Set objGridControl = Nothing   
+ 
+End Function
+
+'##################################################################################################################33
+'Fucnction to select Second Level
+Function fGridTwo(strTemp,strLevel2 ,intI)
+'Function sLayoutLevel2GridSelection()
+  On Error Resume Next   
+  Dim objGridControl, IntCount 
+
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Selceting the Second Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Count
+   For intJ=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Content.Description)=Ucase(strLevel2) then        
+        objGridControl.Nodes_2.Item(intI).ExpandAll       
+        intRow=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).get_RowHandle
+        Call sSelcetLayoutLevel(objGridControl, intRow) 
+'         intRowControl =intRow +1 
+'         Call objGridControl.WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRowControl).WPFObject("RowMarginControl", "", 1).Click(40, 13)
+         Delay 200     
+      Exit For
+    End If
+   Next
+   
+  'msgbox IntJ
+   fGridTwo = IntJ
+   Set objGridControl = Nothing 
+End Function  
+   
+'##################################################################################################################33
+'Fucnction to select Second Level
+Function fGridThree(strTemp,strLevel3 ,intI, intJ)
+'Function sLayoutLevel2GridSelection()
+  On Error Resume Next   
+  Dim objGridControl, IntCount   
+  
+  strLevel3FisrtFolder=getSplitValue(strParameters,"Level3FisrtFolder") 
+  If strLevel3FisrtFolder <> "" And strLevel3 = "" Then 
+    strLevel3 = strLevel3FisrtFolder
+  End If
+  
+'  strMultiLevel =  getSplitValue(strParameters,"MultiLevel") 
+'  strFolderCount = getSplitValue(strParameters,"FolderCount")
+'  strFolderCount = 2
+'  strMultiLevel = "Yes"
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Selecting the Third Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Count        
+  For intK=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Content.Description)=Ucase(strLevel3) then
+          intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).get_RowHandle          
+          Call sSelcetLayoutLevel(objGridControl, intRow) 
+          Dealy 200       
+      Exit For
+    End If
+   Next
+   fGridThree = IntK
+   Set objGridControl = Nothing    
+End Function 
+
+'################################################################################################################################
+
+'Fucnction to select Fourth Level
+Function fGridFour(strTemp,strLevel4 ,intI, intJ,intK)
+'Function sLayoutLevel2GridSelection()
+  On Error Resume Next   
+  Dim objGridControl, IntCount  
+  
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Selecting the Third Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Count        
+  For intL=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(intL).Content.Description)=Ucase(strLevel4) then
+      objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(intL).ExpandAll      
+      intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(intL).get_RowHandle          
+      Call sSelcetLayoutLevel(objGridControl, intRow)         
+      Dealy 200       
+      Exit For
+    End If
+   Next
+   
+   'msgbox IntL
+   fGridFour = IntL
+   Set objGridControl = Nothing    
+End Function
+
+'*****************************************************************************************************************************************
+'TestCase:TC_layout_PRT29 : Select Level3 Multiple Folder Copy multiple folders with Series Paste Below and Verify the changes.
+Sub sLevel3WithSeriesCopyFolder(strParameters)
+'Sub sLevel3WithSeriesCopyFolder()
+  On Error Resume Next
+  Dim strTemp, objGridControl, IntRowNumber(4), strLevel3Category, strLevel2Category , intSeriesID(3), strSourceName(3), intNewSeriesID(3)
+  Dim intLevel2Source2RowNumber(10)
+  
+  strLevel1 =getSplitValue(strParameters,"Level1")
+  strLevel2 =getSplitValue(strParameters,"Level2")  
+  strLevel3 =getSplitValue(strParameters,"Level3")
+  strSecondLevel3 =getSplitValue(strParameters,"SecondLevel3")
+  strButton = getSplitValue(strParameters,"Button") 
+  strMultiLevel =  getSplitValue(strParameters,"MultiLevel")
+  strCopyOption  =getSplitValue(strParameters,"COPYOPTION") 
+  strPasteOption  = getSplitValue(strParameters,"PASTEOPTION")
+  strCategory =getSplitValue(strParameters,"CATEGORY")   
+  strFolderCount =getSplitValue(strParameters,"FolderCount")
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES")  
+  strDXName = getSplitValue(strParameters,"DXName") 
+  
+   
+
+  
+'  strLevel1 = "dX Non-Asia Database (Current Eng Version)"
+'  strLevel2 = "Level2-CopyFolder-WithSeries"
+'  strLevel3 = "Level3-CopyFolder-WithSeries-1"
+'  strSecondLevel3 = "Level3-CopyFolder-WithSeries-3"
+'  strButton = "WPFObject(""ContentControlEx"", ""Open For Edit"", 2)"
+'  strMultiLevel = "Yes"
+'  strCopyOption= "WPFObject(""ContentControlEx"", ""Copy Folder with Series"", 2)"
+'  strPasteOption  = "WPFObject(""ContentControlEx"", ""Paste Below"", 2)"
+'  strFolderCount  = 2
+'  strEnvi = "Edge ( US Integration )" 
+'  strCategory = "Below"  
+  
+  'Open Layout  
+  Call sOpenLayout()  
+  
+  'Select the Level2 Folder and Open for Edit Layout
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  IntRowNumber(0) = fGridone(strTemp,strLevel1 )
+  Sys.Keys "[Enter]"
+  Call sEdgeProcessor()
+  IntRowNumber(1) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(0))  
+  Call sOpenWS(strButton)
+  Delay 2000
+  
+ 'Expand the layout tree then select multiple level3 layout folder    
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Expand the First Level
+   intTotNodeCnt=objGridControl.Nodes_2.Count  
+   For intI=0 to intTotNodeCnt-1         
+     If Ucase(objGridControl.Nodes_2.Item(intI).Content.Description)=Ucase(strLevel1) then
+         'objGridControl.Nodes_2.Item(intI).ExpandAll                       
+         intRow=objGridControl.Nodes_2.Item(intI).get_RowHandle         
+         Call sSelcetLayoutLevel(objGridControl, intRow)   
+         intRowControl =intRow +1 
+         Call objGridControl.WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRowControl).WPFObject("RowMarginControl", "", 1).Click(12, 10)
+        Delay 200           
+      Exit For
+    End If
+   Next 
+ 
+   'Selceting the Second Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Count
+   For intJ=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Content.Description)=Ucase(strLevel2) then        
+       ' objGridControl.Nodes_2.Item(intI).ExpandAll       
+        intRow=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).get_RowHandle
+        Call sSelcetLayoutLevel(objGridControl, intRow)                
+         intRowControl =intRow +1 
+         Call objGridControl.WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRowControl).WPFObject("RowMarginControl", "", 1).Click(40, 13)
+         Delay 200     
+      Exit For
+    End If
+   Next
+   
+   
+   'Selecting the Third Level 
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Count        
+  For intK=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Content.Description)=Ucase(strLevel3) then
+         intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).get_RowHandle          
+          Call sSelcetLayoutLevel(objGridControl, intRow) 
+           If  Ucase(Trim(strMultiLevel)) = Ucase(Trim("Yes"))Then
+            For  I = 0 to  strFolderCount-2 
+               'Call objGridControl.SelectRowCore(intRow+1+I)
+                SYS.Keys("![Down]") 
+            Next
+           End If        
+          Dealy 200       
+      Exit For
+    End If
+   Next
+   
+   
+
+  Call sEdgeProcessor() 
+    
+  'Copy Folder with series
+  Call  fCopy(strCopyOption)
+  Call sEdgeProcessor()
+  
+ intRowNumber(2) = fGridThree(strTemp,strSecondLevel3 ,intI, intJ) 
+  
+  'Paste The Copied Folder
+  Call  fPaste(strPasteOption)
+  Call sEdgeProcessor()
+  
+ For I = 0 to  strFolderCount-1
+    DescText=Replace(aqDateTime.Now,"/","-")
+    intNewNumber =Replace(DescText,":","_")         
+    intNewNumber1 = left(intNewNumber,1)+ Minute(Time) + Second(Time) + J &"-" &intNewNumber 
+    intLen= Len(strLevel3)-Instr(strLevel3, "-")             
+    newSourceName =  Replace(strLevel3 ,Right(strLevel3 ,intLen), intNewNumber1)       
+    Delay 200       
+    Call objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(IntRowNumber(2)+I+1).Content.set_Description(newSourceName)
+    Delay 200
+    Call objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(IntRowNumber(2)+I+1).Content.set_DescriptionLocal(newSourceName) 
+    Dealy 200    
+    Call objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(IntRowNumber(2)+I+1).Content.set_DxFileNm(strDXName&Cint(Second(time))) 
+     strName(I) =  newSourceName    
+    Delay 2000
+ Next
+ 
+ 
+ 'Verify the Copied Folder
+  Dim strWorkspaceName(5), strSeriesID(5)
+  Set objSeriesPanel = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("LayoutSeriesViewControl").WPFObject("BarManager", "", 1).WPFObject("DockPanel", "", 1).WPFObject("LayoutSeriesGridControl").WPFObject("LayoutSeriesTableView")
+  intTotNodeCnt=objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Count        
+  X =0
+  Y =0 
+  For intK=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Content.Description)=Ucase(strLevel3) then
+       intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(Y).get_RowHandle  
+      For intL = 0 to strFolderCount-1                 
+          Call sSelcetLayoutLevel(objGridControl, intRow) 
+          strWorkspaceName(X) = objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(Y).Content.Description 
+          strSeriesID(X) = objSeriesPanel.DataContext.Item(Y).SeriesId
+          intK = intK+1
+          X =X+1
+          intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(Y).get_RowHandle
+         ' intRow =  intRow+1
+      Next
+      Exit For
+    End IF
+  Next
+  
+ X=0 
+  For intK=0 to intTotNodeCnt-1
+    If Ucase(objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Content.Description)=Ucase(strSecondLevel3) then
+    If  strCategory = "Below" then 
+      intK = intK+1
+    End If
+    If strCategory = "Above" then
+      intK = intK-1
+    End IF
+        
+    intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(Y).get_RowHandle 
+    For intL = 0 to strFolderCount-1    
+          Call sSelcetLayoutLevel(objGridControl, intRow) 
+          If objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(Y).Content.Description  =  strWorkspaceName(X) And   objSeriesPanel.DataContext.Item(Y).SeriesId = strSeriesID(X) Then 
+            blnFlag = True 
+          End If
+          intK = intK+1
+          X =X+1
+          intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(Y).get_RowHandle 
+          'intRow = intRow+1
+      Next
+      Exit For
+    End IF
+  Next
+
+  If   blnFlag = True And X = Cint(strFolderCount) Then 
+    strTCRemarks = "All the copied Level 4 Folders with series are pasted correclty "
+    log.Message  "All the copied Level 4 Folders with series are pasted correclty "
+    strTestCaseResult="PASS"
+  Else
+    strTCRemarks = "All the copied Level 4 Folders with series are not pasted correclty "
+    log.Message  "All the copied Level 4 Folders with series are not pasted correclty "
+    strTestCaseResult="FAIL"
+    Exit Sub    
+  End IF   
+  
+   intK = intK-1
+   X = X-1
+  'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor() 
+    
+  'Open Layout  
+    Call sOpenLayout()        
+    strTemp = "WPFObject(""LayoutTreeListView"")" 
+    IntRowNumber(0) = fGridone(strTemp,strLevel1 )
+    ' Sys.Keys "[Enter]"
+    Call sEdgeProcessor()
+    Delay 2000
+    IntRowNumber(1) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(0))  
+    Call sOpenWS(strButton)
+    Call sEdgeProcessor()
+    Delay 2000 
+   
+  strTemp = "WPFObject(""LayoutTreeListView"")"    
+  IntRowNumber(0) = fGridone(strTemp,strLevel1 )
+  IntRowNumber(1) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(0))  
+  IntRowNumber(2) = fGridThree(strTemp,strWorkspaceName(X) ,IntRowNumber(0), IntRowNumber(1))
+  
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)       
+  intRow =objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(0).get_RowHandle          
+  Call sSelcetLayoutLevel(objGridControl, intRow)         
+  Call sEdgeProcessor() 
+   
+    
+ 
+    If objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).Nodes.Item(Y).Content.Description  =  strWorkspaceName(X) And   objSeriesPanel.DataContext.Item(Y).SeriesId = strSeriesID(X) Then 
+        strTCRemarks1 = strTCRemarks  & "<br />" & "All the copied Level 4 Folders with series Uploaded Successfully"
+        log.Message   "All the copied Level 4 Folders with series Uploaded Successfully"
+        strTestCaseResult="PASS"
+    Else
+        strTCRemarks = strTCRemarks  & "<br />" & "All the copied Level 4 Folders with series are not Uploaded Successfully"
+        log.Message   "All the copied Level 4 Folders with series are not Uploaded Successfully"
+        strTestCaseResult="FAIL"
+    End If
+    
+    'Clean Up
+    Call sCloseSWV() 
+    Call sLayoutWorkSpacevwr() 
+    Set objGridControl = nothing 
+    
+   If Err.Number > 0 Then
+    Log.Warning("Error in 'sLevel3WithSeriesCopyFolder', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Sub
+
+'*************************************************************************************************************************88
+'Open Layout Module
+Sub sOpenLayout()  
+  On Error Resume Next
+  Dim objEdgeMDI,strTemp,objTemp
+    
+    strTemp = "WPFObject(""LayoutTreeListView"")" 
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    If objTemp.Exists  Then
+      Log.Message "Layout Module is already opened." 
+      Exit Sub 
+    Else
+      strTemp="WPFObject(""ContentControl"", ""Layout"", 1)"
+      all sObjClick(strTemp)
+      Delay 2000 , "Please wait Layout Module is opening "
+      Set objText = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("TextBlock", "Layout", 1)
+      If objText.WPFControlText = "Layout" then 
+       Log.Message "Layout Module is Opened"
+      Else
+        log.Message "Layout module could not able to open"
+        strTestCaseResult="FAIL"
+      End If
+    End If
+End Sub
+'#######################################################################################################################3
+'Click on NewWorkspace and chose the required option
+
+
+Function sOpenWS(strButton)
+  On Error Resume Next
+  
+  
+  DescText=Replace(aqDateTime.Now,"/","-")
+  DescText=Replace(DescText,":","_") 
+  ''strDescText = DescText
+  
+  ''Clicking on "New Workspace" Button and selecting "Open for Edit(Souce)" option 
+  strTemp="WPFObject(""ContentControlEx"", ""New Workspace"", 2)"  
+  Set objNewWorkspace=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  Call sObjClick(strTemp)
+  'click on Required Button 
+  Call sObjClick(strButton)
+  'Call sEdgeProcessor()
+  
+   ''Waiting for Workspace Name prompt
+      strTemp="WPFObject(""HwndSource: WorkspaceNamePrompt"", ""Please provide a new Workspace Name"")"
+      Set objNewWrkSpace_Name=Sys.Process("EdgeClient").WaitChild(strTemp,60000)
+        If objNewWrkSpace_Name.Exists = True then
+          strTemp="WPFObject(""ChangeNameTextEdit"")"
+          ''Entering Workspace Name
+          Set objNewWrkSpace_Txtbox=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+            If objNewWrkSpace_Txtbox.Exists = True then  
+              objNewWrkSpace_Txtbox.Click
+              objNewWrkSpace_Txtbox.Text=DescText
+              ''Clicking on Ok Button 
+              strTemp="WPFObject(""OkButton"")"
+              Set objNewWrkSpace_okbtn=objNewWrkSpace_Name.FindChild("Name",strTemp,9,True)
+              If objNewWrkSpace_okbtn.Exists = True then
+                objNewWrkSpace_okbtn.Click 
+                Call sEdgeProcessor()
+                Call sCloseSWV()                         
+              End If
+            End If
+        End If
+        
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenWS', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Function
+'#######################################################################################################################3
+'TestCase:TC_layout_PRT30: Verify Cut Folder and Paste Above/Below source folder/s.
+
+Sub sCutLayoutFolders(strParameters)
+'Sub sCutLayoutFolders()
+
+  Delay 3000 , "Pls Wait..."
+  On Error Resume Next
+  Dim strTemp, objGridControl, objTemp, blnFlag, newSourceName, intTotNodeCnt,IntRowNumber(10),strSeriesID(5), strSourceName(10)
+  
+  
+  strLevel1 =getSplitValue(strParameters,"Level1")
+  strLevel2 =getSplitValue(strParameters,"Level2")  
+  strLevel3 =getSplitValue(strParameters,"Level3")
+  strLevel4 =getSplitValue(strParameters,"Level4")
+  strSecondLevel3= getSplitValue(strParameters,"SecondLevel3")
+  strSecondLevel4=getSplitValue(strParameters,"SecondLevel4")
+  strMultiLevel =  getSplitValue(strParameters,"MultiLevel")
+  strButton = getSplitValue(strParameters,"Button") 
+  strPasteOption  = getSplitValue(strParameters,"PASTEOPTION")
+  strFolderCount =getSplitValue(strParameters,"FolderCount") 
+  strCategory =getSplitValue(strParameters,"CATEGORY")
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES")   
+  
+'    strLevel1 = "dX Non-Asia Database (Current Eng Version)"
+'    strLevel2 = "Level2-CopyFolder-WithSeries"
+'    strLevel3 = "Level3-CopyFolder-WithSeries-4" 
+'    strLevel4 = "Level4-CF-WithSeries-1" 
+'    strSecondLevel4 = "Level4-CF-WithSeries-3" 
+'    'strSecondLevel3 = "Level3Folder-2"
+'    'strMultiLevel = "Yes"
+'    strButton = "WPFObject(""ContentControlEx"", ""Open For Edit"", 2)"
+'    strPasteOption  = "WPFObject(""ContentControlEx"", ""Paste Below"", 2)"
+'    'strTestCase_no = "TC_layout_PRT32"
+'    strCategory = "Below"
+'    strFolderCount = "1"
+'    strWithSeries = "Yes"
+  
+  'Open Layout  
+  Call sOpenLayout() 
+  
+  'Select Level3 Folder and Open For Edit 
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  IntRowNumber(0) =   fGridone(strTemp,strLevel1 )
+  IntRowNumber(1) =  fGridTwo(strTemp,strLevel2 ,IntRowNumber(0))
+  IntRowNumber(2)=  fGridThree(strTemp,strLevel3 ,IntRowNumber(0), IntRowNumber(1)) 
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  RowCnt = (objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Count)    
+  intRow =objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).get_RowHandle 
+  If strMultiLevel = "Yes" Then 
+    For  I =  0 to  RowCnt-1
+      If Ucase(objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(I).Content.Description)=Ucase(strSecondLevel3) Then
+        intRow =objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(I).get_RowHandle         
+         SYS.Keys("!")
+         Call objGridControl.SelectRowCore(intRow) 
+      End If      
+    Next         
+    
+   ' Call objGridControl.SelectRowCore(intRow+RowCnt)             
+  End If
+  
+  Call sOpenWS(strButton)
+  Delay 2000
+  
+  'Expand All Levels
+  strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"  
+  Call sobjClick(strTemp) 
+  
+  'Select the Level4 Folder 
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  IntRowNumber(0) = fGridone(strTemp,strLevel1 )
+  IntRowNumber(1) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(0)) 
+  IntRowNumber(2)=  fGridThree(strTemp,strLevel3 ,IntRowNumber(0), IntRowNumber(1))    
+  IntRowNumber(3) = fGridFour(strTemp,strLevel4 ,IntRowNumber(0), IntRowNumber(1),IntRowNumber(2))
+  
+  Set objSeriesPanel = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("LayoutSeriesViewControl").WPFObject("BarManager", "", 1).WPFObject("DockPanel", "", 1).WPFObject("LayoutSeriesGridControl").WPFObject("LayoutSeriesTableView")
+ 
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_layout_PRT32"))Or Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_layout_PRT36"))Then
+     For  I = 0 to  strFolderCount-2 
+        strTemp = "WPFObject(""LayoutTreeListView"")" 
+        Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+        SYS.Keys("![Down]") 
+        strName(I+1) = objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntRowNumber(3)+I+1).Content.Description
+        'msgbox  strName(I+1)
+     Next
+  End If
+  
+  X=0
+  Y=0
+   If strWithSeries = "Yes" then 
+    Call sEdgeProcessor()
+    Delay 2000, "Please wait Series Module is opening"
+     For  I = 0 to  strFolderCount-1 
+        strSeriesID(X) = objSeriesPanel.DataContext.Item(Y).SeriesId
+        X=X+1
+     Next
+   End If 
+   
+  'Cut the Folder
+  Call fCut()
+  
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_layout_PRT32"))Or Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_layout_PRT36"))Then
+    'Select the Other Level3 Folder
+     IntRowNumber(2)=  fGridThree(strTemp,strSecondLevel3 ,IntRowNumber(0), IntRowNumber(1)) 
+     'Select the Second Level4 Folder
+     IntRowNumber(4) = fGridFour(strTemp,strSecondLevel4 ,IntRowNumber(0), IntRowNumber(1),IntRowNumber(2))
+     Select Case Ucase(strCategory) 
+'            Case Ucase("Above")
+'                 IntRowNumber(4)= IntRowNumber(4)-1                   
+'                   ' Exit For            
+            Case Ucase("Below")  
+                 IntRowNumber(4)= IntRowNumber(4)+1        
+      End Select
+  Else
+    'Select the Second Level4 Folder
+    IntRowNumber(4) = fGridFour(strTemp,strSecondLevel4 ,IntRowNumber(0), IntRowNumber(1),IntRowNumber(2))
+    Call sEdgeProcessor()
+    Delay 1000
+'    If strCategory = "Above" Then 
+'      IntRowNumber(4)= IntRowNumber(4)-1
+'    End If
+  
+  End If
+  
+  
+  'Paste The Cut Folder
+  Call  fPaste(strPasteOption)
+  Call sEdgeProcessor()
+  
+  'Save the Workspace
+  Call fSaveWorkspace() 
+  Call sEdgeProcessor()         
+  Call sCloseSWV() 
+    
+  'Open the Saved Workspace from Source Workspace Viewer         
+  Call sOpenLayoutViewrWS()
+  Call sEdgeProcessor()  
+  Delay 2000 
+  
+  
+  'Expand All Levels
+  strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"  
+  Call sObjClick(strTemp)
+  
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+               
+  'Verify the  updated changes reflected or not
+  blnFlag = False
+  blnSeriesFlag = False
+  Cnt = 0
+  X =0 
+  msgbox  IntRowNumber(4)
+  ' intTotNodeCnt=objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Count
+   strName(0) = strLevel4 
+   For  I = 0 to  strFolderCount-1      
+        'msgbox  IntRowNumber(4)
+      If objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntRowNumber(4)+I).Content.Description = strName(I) Then 
+        If strWithSeries = "Yes" Then 
+          IntRowNumber(4) = fGridFour(strTemp,strLevel4 ,IntRowNumber(0), IntRowNumber(1),IntRowNumber(2))
+          Delay 2000
+          Call sEdgeProcessor()
+          If  objSeriesPanel.DataContext.Item(Y).SeriesId  = strSeriesID(X) then 
+            blnSeriesFlag = True
+             X = X+1
+           End If 
+          End If
+          blnFlag = True
+          Cnt = Cnt +1
+        End If    
+    Next
+  
+    
+     If strWithSeries = "Yes" Then 
+       If blnSeriesFlag = True then
+           blnFlag = True 
+           strText = "With Series"
+       Else
+          blnFlag = False
+       End If
+    End If  
+    
+    
+   If blnFlag = True and  Cnt  = CInt(strFolderCount) then 
+    strTCRemarks = "Cut Level4 Folder/Folders "& strText &" are pasted correclty "
+    log.Message  "Cut Level4 Folder/Folders "& strText &" are pasted correclty "
+    strTestCaseResult= "PASS"
+   Else
+    strTCRemarks = "Cut Level4 Folder/Folders "& strText &" are not pasted correclty "
+    log.Message  "Cut Level4 Folder/Folders "& strText &" are not pasted correclty "
+    strTestCaseResult= "FAIL"   
+  End If
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sCutLayoutFolders', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+  
+End Sub
+'**************************************************************************************************************************************************************8
+'TestCase:TC_layout_PRT37{}: Verify Cut Folder and Paste Inside source folder/s.
+
+Sub sCutLayoutFoldersInside(strParameters)
+'Sub sCutLayoutFoldersInside()
+
+  Delay 3000 , "Pls Wait..."
+  On Error Resume Next
+  Dim strTemp, objGridControl, objTemp, blnFlag, IntCnt , newSourceName, intTotNodeCnt,IntRowNumber(10),strSeriesID(5), strSourceName(10)
+  
+  strLevel1 =getSplitValue(strParameters,"Level1")
+  strLevel2 =getSplitValue(strParameters,"Level2")  
+  strLevel3 =getSplitValue(strParameters,"Level3")
+  strLevel4 =getSplitValue(strParameters,"Level4")
+  strSecondLevel3= getSplitValue(strParameters,"SecondLevel3")
+  strSecondLevel4=getSplitValue(strParameters,"SecondLevel4")
+  strMultiLevel =  getSplitValue(strParameters,"MultiLevel")
+  strButton = getSplitValue(strParameters,"Button") 
+  strPasteOption  = getSplitValue(strParameters,"PASTEOPTION")
+  strFolderCount =getSplitValue(strParameters,"FolderCount") 
+  strCategory =getSplitValue(strParameters,"CATEGORY")
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES") 
+  blnFlag = False  
+  IntCnt = 0 
+  
+'    strLevel1 = "dX Non-Asia Database (Current Eng Version)"
+'    strLevel2 = "CopyFolder_3"
+'    strLevel3 = "Level3Folder-1" 
+'    strSecondLevel3 = "Level3Folder-2"
+'    strLevel4 = "Level4Folder-1" 
+'    'strSecondLevel4 = "Level4-CF-WithSeries-3"     
+'    'strMultiLevel = "Yes"
+'    strButton = "WPFObject(""ContentControlEx"", ""Open For Edit"", 2)"
+'    strPasteOption  = "WPFObject(""ContentControlEx"", ""Paste Inside"", 2)"
+'    'strTestCase_no = "TC_layout_PRT32"
+'    'strCategory = "Below"
+'     strFolderCount = "1"
+'    'strWithSeries = "Yes"
+
+
+ 
+  'Open Layout  
+  Call sOpenLayout() 
+  
+  'Select Level3 Folder and Open For Edit 
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  IntRowNumber(0) =   fGridone(strTemp,strLevel1 )
+  IntRowNumber(1) =  fGridTwo(strTemp,strLevel2 ,IntRowNumber(0))
+  'IntRowNumber(2)=  fGridThree(strTemp,strLevel3 ,IntRowNumber(0), IntRowNumber(1)) 
+  
+ 'Open For Edit 
+  Call sOpenWS(strButton)
+  Delay 2000
+  
+  'Expand All Levels select level4 layout folder then Click on 'Cut Folder'
+  strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"  
+  Call sobjClick(strTemp)
+  Delay 2000
+  Call sEdgeProcessor()
+  
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  IntRowNumber(0) = fGridone(strTemp,strLevel1 )
+  IntRowNumber(1) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(0)) 
+  IntRowNumber(2)=  fGridThree(strTemp,strLevel3 ,IntRowNumber(0), IntRowNumber(1))    
+  IntRowNumber(3) = fGridFour(strTemp,strLevel4 ,IntRowNumber(0), IntRowNumber(1),IntRowNumber(2))
+  Call sEdgeProcessor()
+  Delay 2000
+  strName(0) = strLevel4
+  For I = 1 To strFolderCount-1
+    strTemp = "WPFObject(""LayoutTreeListView"")" 
+    Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    SYS.Keys("![Down]")
+    strName(I)= objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntRowNumber(3)+I).Content.Description 
+  Next
+  Call sEdgeProcessor()
+  Delay 1000
+  
+  'Cut the Folder
+  Call fCut()
+  
+ 'Select the other level3 layout folder   and click on 'Paste Folder'>'Paste Inside'
+ IntRowNumber(2)=  fGridThree(strTemp,strSecondLevel3 ,IntRowNumber(0), IntRowNumber(1))    
+  
+  Call sEdgeProcessor()
+  Delay 1000
+ 
+  'Paste The Cut Folder
+  Call  fPaste(strPasteOption)
+  Call sEdgeProcessor()
+  
+  'Save the Workspace
+  Call fSaveWorkspace() 
+  Call sEdgeProcessor()         
+  Call sCloseSWV() 
+  
+   'Open the Saved Workspace from Source Workspace Viewer         
+  Call sOpenLayoutViewrWS()
+  Call sEdgeProcessor()  
+  Delay 2000 
+  
+  'Expand All Levels
+  strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"  
+  Call sobjClick(strTemp)
+  
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Verify the  updated changes reflected or not  
+  intTotNodeCnt= objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Count  
+  For IntL = 0 to intTotNodeCnt-1
+    If objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntL).Content.Description = strLevel4 then
+      For I = 0 to strFolderCount-1
+         If objGridControl.Nodes_2.Item(IntRowNumber(0)).Nodes.Item(IntRowNumber(1)).Nodes.Item(IntRowNumber(2)).Nodes.Item(IntL+I).Content.Description = strName(I) Then
+          blnFlag = True 
+         IntCnt = IntCnt+1  
+      End If
+     Next 
+    End If
+ Next 
+ 
+ If blnFlag = True And IntCnt = Cint(strFolderCount) Then 
+    strTCRemarks = "Cut Level4 Folder/Folders "& strText &" are pasted correclty "
+    log.Message  "Cut Level4 Folder/Folders "& strText &" are pasted correclty "
+    strTestCaseResult= "PASS"
+  Else
+    strTCRemarks = "Cut Level4 Folder/Folders "& strText &" are not pasted correclty "
+    log.Message  "Cut Level4 Folder/Folders "& strText &" are not pasted correclty "
+    strTestCaseResult= "FAIL"    
+  End If
+  
+  Set objGridControl = Nothing  
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sCutLayoutFoldersInside', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Sub
+
+'**************************************************************************************************************************************************************8
+'TestCase:TC_layout_PRT41{}: Verify Cut/Copy Folder and Paste across country:
+Sub sCopyCutAccross()
+'Sub sCopyCutAccross(strParameters)  
+  Delay 3000 , "Pls Wait..."
+  On Error Resume Next
+  Dim strTemp, objGridControl, objTemp, blnFlag, IntCnt , newSourceName, intTotNodeCnt,IntRowNumber(15),strSeriesID(5), strFolderName 
+  
+  strLevel1 =getSplitValue(strParameters,"Level1")
+  strLevel2 =getSplitValue(strParameters,"Level2")  
+  strLevel3 =getSplitValue(strParameters,"Level3")
+  strLevel4 =getSplitValue(strParameters,"Level4")
+  strSecondLevel2= getSplitValue(strParameters,"SecondLevel2")
+  strSecondLevel3= getSplitValue(strParameters,"SecondLevel3")
+  strSecondLevel4=getSplitValue(strParameters,"SecondLevel4")
+  strMultiLevel =  getSplitValue(strParameters,"MultiLevel")
+  strButton = getSplitValue(strParameters,"Button") 
+  strPasteOption  = getSplitValue(strParameters,"PASTEOPTION")
+  strFolderCount =getSplitValue(strParameters,"FolderCount") 
+  strCategory =getSplitValue(strParameters,"CATEGORY")
+  strWithSeries = getSplitValue(strParameters,"WITHSERIES") 
+  strAction =getSplitValue(strParameters,"Action")
+  strCopyOption= getSplitValue(strParameters,"COPYOPTION")
+  blnFlag = False  
+  IntCnt = 0 
+  
+  
+'  
+'    strLevel1 = "dX Non-Asia Database (Current Eng Version)"
+'    strLevel2 = "FolderAcrossCountry-1"
+'    strSecondLevel2 ="FolderAcrossCountry-2"    
+'    strLevel3 = "Level3Folder-1" 
+'    strSecondLevel3 = "Level3Folder-4"
+'    strLevel4 = "Level4Folder-1" 
+'    strSecondLevel4 = "Level4Folder-4"     
+''    'strMultiLevel = "Yes"
+'    strButton = "WPFObject(""ContentControlEx"", ""Open For Edit"", 2)"
+'    strCopyOption="WPFObject(""ContentControlEx"", ""Copy Folder Only"", 2)"
+'    strPasteOption  = "WPFObject(""ContentControlEx"", ""Paste Above"", 2)"
+''    'strTestCase_no = "TC_layout_PRT32"
+''    'strCategory = "Below"
+''     strFolderCount = "1"
+''    'strWithSeries = "Yes"
+'     strAction = "Copy" 
+
+
+  'Select level4 layout folder from first level2 layout folder then 'Copy Folder Only
+  
+  strTemp = "WPFObject(""LayoutTreeListView"")" 
+  IntRowNumber(4) = fGridone(strTemp,strLevel1 )
+  IntRowNumber(5) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(4)) 
+  IntRowNumber(6)=  fGridThree(strTemp,strLevel3 ,IntRowNumber(4), IntRowNumber(5))    
+  IntRowNumber(7) = fGridFour(strTemp,strLevel4 ,IntRowNumber(4), IntRowNumber(5),IntRowNumber(6))
+  Call sEdgeProcessor()
+  Delay 2000
+  strFolderName = strLevel4
+  
+  'Cut/Copy Folder  
+  If strAction = "Copy" Then
+    fCopy(strCopyOption)
+  Else
+  End If
+  
+  
+   'Now, select level4 layout folder from second level2 layout folder and 'Paste Above'
+ IntRowNumber(8) = fGridTwo(strTemp,strSecondLevel2 ,IntRowNumber(4)) 
+ IntRowNumber(9)=  fGridThree(strTemp,strSecondLevel3 ,IntRowNumber(4), IntRowNumber(8))    
+ IntRowNumber(10) = fGridFour(strTemp,strSecondLevel4 ,IntRowNumber(4), IntRowNumber(8),IntRowNumber(9))
+ Call sEdgeProcessor()
+  
+ 
+  'Paste The Cut/Copy Folder
+  Call  fPaste(strPasteOption)
+  Call sEdgeProcessor() 
+  
+  'Verification is Pasted Above/Below
+
+  '**********************8Need to continue Layout Module from here************************************
+  
+End Sub
+
+
+
+

@@ -1,0 +1,636 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+''**************************************************************
+'Start    : All File_Repository Script are written hin this unit
+'Start Date    : 06/06/2020
+'Created by: Chethana S R
+'************************************************************** 
+
+Function fOpenFileRep()
+  On Error Resume Next
+  Dim strTemp , objTemp 
+  
+ ' strEnvi = "Edge ( US Integration )"
+  
+  'Close all opened Window
+  strTemp = "WPFObject(""LayoutPanel"", """", 1)"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).FindChild("Name",strTemp,10,True)
+  If objTemp.Exists then 
+  if aqObject.GetPropertyValue(objTemp, "Caption")<> "File Repository" Then   
+       Call SClosesource()
+       Delay 2000 
+    End If      
+  End If
+  
+  'Click on file Reposioty Button 
+  
+  strTemp = "WPFObject(""TextBlock"", ""File Repository"", 1)"
+  Set objTemp=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+  If objTemp.Exists = False then   
+    strTemp = "WPFObject(""ContentControl"", ""Repository"", 2)"
+    Call sObjClick(strTemp)
+    Call sEdgeProcessor()  
+    strTemp = "WPFObject(""TextBlock"", ""File Repository"", 1)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    If objTemp.get_Text = "File Repository" Then 
+       log.message "File Reposiotry Module is opened"
+    Else
+      Log.Message "File Reposiotry Module is not opened"
+    End If
+  Else
+     Log.Message "File Reposiotry Module is already opened"
+  End If
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fOpenFileRep', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+  
+End Function
+'*********************************************************************************************************************
+'Testcase:TC_FR_PRT01:Check for Export  footnote
+Sub sExportFootNote(strParameters)
+  On Error Resume Next
+  Dim strTemp, objTemp, objCombobox, intColumnNumber,intRownumber, strCountry,strDescription, strFolderName
+  Dim FilePath, foundFolders,  aFolder
+  
+  strCountry = getSplitValue(strParameters,"Country")
+  strDescription = getSplitValue(strParameters,"Description")  
+  strFolderName = getSplitValue(strParameters,"FolderName")
+ 
+  
+'  strCountry = "Test"
+'  strDescription = "v9.11 footnote.htm"    
+'  strEnvi = "Edge ( US Integration )"
+  
+  'Open the File Repository Module
+   Call fOpenFileRep()
+     
+  'Select the Required Country
+  Call fSelectCountry(strCountry)
+  Call sEdgeProcessor()
+  Delay 5000
+  
+  'Select File Location
+   FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\My Documents\Edge\FileRepository\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")
+   'msgbox FilePath
+   aqFileSystem.CreateFolder(FilePath)   
+  ' msgbox FilePath
+   Call sChooseLocation(FilePath)
+   
+   Delay 200
+   'Select the FOOTNOTE
+   Call sSelect_FootNote(strDescription)
+  
+  'Click on 'Export Selected' 
+  strTemp = "WPFObject(""ContentControlEx"", ""Export Selected"", 2)"
+  Call sObjClick(strTemp)   
+  Delay 200 
+
+  'click on OK Button 
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Export File Repository").WPFObject("CustomMessageBoxWindow", "Export File Repository", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_OK").WPFObject("RenderContentPresenterElement", "", 1).WaitChild("WPFObject(""Label_Ok"")",60000)
+  If objTemp.Exists = False Then 
+    Delay 10000, "Please Wait for Confirmation Message"
+  End If
+  objTemp.Click
+  
+  'Delet the Selected FootNote
+  Call sDelete()
+  
+  'Validate Exported FootNote
+
+  Set foundFolders  = aqFileSystem.FindFolders(FilePath, strFolderName)
+  If Not foundFolders  Is Nothing Then
+      While foundFolders.HasNext
+           Set aFolder = foundFolders.Next
+           strTCRemarks = "The Selected FootNote "+ strFolderName + " is Exported"
+           strTestCaseResult = "PASS" 
+           log.Message "The Selected FootNote "+ strFolderName + " is Exported"          
+      Wend
+  Else
+      strTCRemarks = "The Selected FootNote "+ strFolderName + " is not Exported"
+      strTestCaseResult = "FAIL" 
+      Log.Message "The Selected FootNote "+ strFolderName + " is not Exported"
+  End If  
+  
+  'Clearning the Memory 
+  Set objTemp = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sExportFootNote', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If    
+End Sub
+
+
+'*********************************************************************************************************************88
+
+'Function to seledct Country 
+Function fSelectCountry(strCountry)
+  
+  on Error Resume Next
+  
+  'strEnvi = "Edge ( US Integration )"  
+  
+	Set objCombobox = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("Adorner").WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("WrapPanel", "", 1).WPFObject("StackPanel", "", 1).WPFObject("ComboBox", "", 1)
+  objCombobox.DropDown
+  Call objCombobox.Keys(strCountry)
+  Delay(500)
+  Call objCombobox.Keys("[Enter]") 
+  
+  Set objCombobox = Nothing 
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fSelectCountry', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Function
+
+'*********************************************************************************************************************
+'Chose the Location
+
+Function sChooseLocation(strLocation)
+  On Error Resume Next
+  
+  Dim strTemp, objTemp
+  strTemp ="WPFObject(""TextBox"", """", 1)"
+  'strLocation = "C:\Users\rchethana\Documents\EDGE Automation\EDGE\EdgeFileRepository"
+  'Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  strTemp= "WPFObject(""Button"", ""..."", 1)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  objTemp.Click()
+  Set objTemp = Sys.Process("EdgeClient").Window("#32770", "Select Folder", 1)
+  'Enter the File Path to Export
+  Call objTemp.Window("Edit", "", 1).SetText("")
+  Call objTemp.Window("Edit", "", 1).SetText(strLocation)
+  'Click on Select Folder Button
+  Call objTemp.Window("Button", "Select Folder", 1).Click() 
+  Delay(500)
+  'Call objTemp.Keys("[Enter]") 
+  
+  Set objTemp = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sChooseLocation', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Function
+'*****************************************************************************************************************88
+''Testcase:TC_FR_PRT03:Check  for Delete Footnote
+Sub sDeletFootNote(strParameters)
+
+  Dim strTemp, objTemp, objCombobox, intColumnNumber,intInStr, blnFalg,objGridView, objCell
+  Dim intI, I
+  
+  'strCountry = getSplitValue(strParameters,"Country")
+  strDescription = getSplitValue(strParameters,"Description")  
+  
+  'strDescription= "f"
+  'DescText = "http://Test-10-06-2020 11:33:48 AM"
+  
+  blnFalg = True
+  
+  'Select the Required Footnote file
+   If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_FR_PRT04"))Then
+      Call sSelect_FootNote(strDescription)
+   Else
+      Call sSelect_FootNote(DescText)
+  End If
+    
+  
+  
+  
+  'Click on Delet Button 
+  intInStr =  sDelete()
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_FR_PRT04"))Then
+      If intInStr > 0 Then
+        strTCRemarks = "Warning message is Dispalyed and could not able to Delete FootNote which is  connected to  layout"
+        log.Message strTCRemarks
+        strTestCaseResult = "PASS" 
+      Else
+        strTCRemarks = "Warning message is not Dispalyed and could not able to Delete FootNote which is  connected to  layout"
+        strTestCaseResult = "FAIL" 
+        log.Message strTCRemarks
+      End  If
+  Else   
+      log.Message "FootNote Link :- " & DescText & "- is Deleted"
+ 
+      'Validatating the Deleted FootNote 
+      strTemp = "WPFObject(""FileRepositoryTableControl"")"
+      Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  
+      For intI= 0 to objTemp.wColumnCount-1
+        if objTemp.wColumn(intI)= "Description" Then 
+          intColumnNumber = intI
+          Delay 200      
+          Exit For
+        End If
+      Next 
+  
+     For I = 0 to objTemp.wRowCount-1
+      If objTemp.wValue(I, intColumnNumber) =  DescText Then 
+        blnFalg= False
+        Exit For
+      End If
+     Next
+  
+     If  blnFalg= True Then 
+        strTCRemarks = "The Deleted File : " &DescText&"  is removed from the Repository"
+        strTestCaseResult = "PASS" 
+        log.Message strTCRemarks
+     Else
+        strTCRemarks = "The Deleted File : " &DescText&"  is not removed from the Repository"
+        strTestCaseResult = "FAIL"   
+        log.Message strTCRemarks
+     End If
+ End IF
+ 
+ If Err.Number > 0 Then
+    Log.Warning("Error in 'sDeletFootNote', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+ End If 
+ 
+ Set objTemp = Nothing 
+  
+  
+End Sub
+
+'*******************************************************************************************************************88
+'Fucntion to Select a Required FootNote
+Function sSelect_FootNote(strDescription)
+
+  'Select the FOOTNOTE
+  strTemp = "WPFObject(""FileRepositoryTableControl"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  
+  For intI= 0 to objTemp.wColumnCount-1
+    if objTemp.wColumn(intI)= "Description" Then 
+      intColumnNumber = intI
+      Delay 200      
+      Exit For
+    End If
+  Next
+  For intI = 0 to objTemp.wRowCount-1
+    if objTemp.wValue(intI, intColumnNumber)= strDescription Then
+      intRownumber = intI     
+      Exit For 
+    End if 
+  Next
+  
+  delay 200
+  'msgbox intRownumber
+  strTemp = "WPFObject(""FileRepositoryTableView"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  Call objTemp.SelectRow(intRownumber)
+  Call sEdgeProcessor()
+  Delay 2000
+  sSelect_FootNote = intRownumber
+  
+End Function
+'******************************************************************************************************************8
+'Fucntion to Delet FootNote
+
+Function sDelete()
+  
+   On Error Resume Next
+   Dim objTemp, strTemp
+   
+  'Click on Delet Button  
+  strTemp = "WPFObject(""ContentControlEx"", ""Delete Selected"", 2)"
+  Call sObjClick(strTemp)  
+  Delay 300
+  'click on Yes Button 
+  strTemp= "WPFObject(""Button_Yes"")"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Delete File Repository").FindChild("Name", strTemp, 60, True)
+  objTemp.Click
+  Delay 6000
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_FR_PRT04"))Then
+      strTemp = "WPFObject(""TextBlock_Message"")"
+      Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Delete File Repository").FindChild("Name", strTemp, 60, True)
+      strText = aqObject.GetPropertyValue(objTemp, "wText") 
+      sDelete = Instr(strText, "The action cannot be completed because:") 
+  End If
+  'Click on Ok Button on sucessful Message
+  strTemp= "WPFObject(""Button_OK"")"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Delete File Repository").FindChild("Name", strTemp, 60, True)
+  objTemp.Click
+  
+  Set objTemp= Nothing
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDelete', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+ End If 
+  
+  
+  
+End Function
+'******************************************************************************************************************8
+'Testcase:TC_FR_PRT02:Check for Import footnote
+Sub sImport_FootNote(strParameters)
+'Sub sImport_FootNote()
+
+On Error Resume Next
+  Dim strTemp, objTemp, objCombobox, intColumnNumber,intRownumber, blnFlag
+  Dim strCountry,strDescription, strFolderName , FilePath , objLayout
+  
+  strCountry = getSplitValue(strParameters,"Country")
+  strDescription = getSplitValue(strParameters,"Description")  
+  strFolderName = getSplitValue(strParameters,"FolderName")
+  blnFlag = False
+  
+'  strCountry = "Test"
+'  strDescription = "YY_BRAZIL_EN.htm"  
+'  strFolderName = "YY_BRAZIL_EN"
+'  
+  'Select File Location
+   FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\My Documents\Edge\FileRepository\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")
+  
+  'Click on 'Import File' 
+  strTemp= "WPFObject(""ContentControlEx"", ""Import File"", 2)"
+  Call sObjClick(strTemp)  
+  Delay 200
+  
+  strTemp= "WPFObject(""LayoutGroup"", """", 1)"
+  Set objLayout = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50,True)
+  'Click on ... button
+  strTemp= "WPFObject(""Button"", ""..."", 1)"
+  Set objTemp = objLayout.WPFObject("LayoutPanel", "", 2).FindChild("Name",strTemp,50,True)
+  Call objTemp.Click()
+  'Set the Location
+  Set objTemp = Sys.Process("EdgeClient").Window("#32770", "Select Folder", 1).Window("Edit", "", 1)
+  Call objTemp.SetText("") 
+  Call objTemp.SetText(FilePath)
+  'Click on Select Folder 
+  Set objTemp = Sys.Process("EdgeClient").Window("#32770", "Select Folder", 1).Window("Button", "Select Folder", 1)
+  objTemp.Click()
+  Call sEdgeProcessor()
+  'Click on Refresh Button
+  strTemp= "WPFObject(""Button"", ""Refresh"", 2)"
+  Set objTemp = objLayout.WPFObject("LayoutPanel", "", 2).FindChild("Name",strTemp,50,True)
+  Call objTemp.click()
+  Call sEdgeProcessor
+  'Select the Folder to Import
+  strTemp = "WPFObject(""FileTableControl"")"
+  Set objTemp= objLayout.WPFObject("LayoutPanel", "", 2).FindChild("Name",strTemp,50,True) 
+  Call objTemp.ClickCell(0, "Folder")
+  Delay 500
+  
+  'Click on Import Button
+  strTemp= "WPFObject(""ContentControlEx"", ""Import"", 2)"
+  Set objTemp= objLayout.WPFObject("LayoutPanel", "", 2).FindChild("Name",strTemp,50,True) 
+  Call objTemp.Click()
+  Delay 5000
+  'Click on OK button
+  strTemp= "WPFObject(""Button_OK"")"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Import Files").FindChild("Name", strTemp, 60, True)
+  Call objTemp.Click()
+  
+  'Close Import files Folder
+  strTemp= "WPFObject(""LayoutPanel"", """", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp,50,True)
+  Call objTemp.Click(634, 14)
+  Delay 500
+  strTemp= "WPFObject(""Button_Yes"")"
+  Set objTemp=  Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Edge").FindChild("Name", strTemp, 50, True)
+  If objTemp.Exists Then 
+    objTemp.Click()
+  End If
+  Delay 1000 
+  
+  'Validate Imported File
+  'Click on Refrsh Button   
+  strTemp= "WPFObject(""ContentControlEx"", ""Refresh"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  Call objTemp.click()
+  Call sEdgeProcessor()
+  strTemp = "WPFObject(""FileRepositoryTableControl"")"
+  Set objTemp= Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  
+  For I=0 to objTemp.wRowCount-1
+    If objTemp.wValue(I, "Description")= strDescription And Cstr(objTemp.wValue(I, "Post Date"))= aqConvert.DateTimeToStr(Date) _
+        And  objTemp.wValue(I, "Last Updated User Id")= Sys.UserName Then 
+        blnFlag = True
+        Exit For
+    End If
+  Next
+  
+  If blnFlag= True Then 
+    strTCRemarks = "The File "+ strDescription+ " is imported correctly"
+    strTestCaseResult = "PASS" 
+    log.Message strTCRemarks
+  Else
+    strTCRemarks = "The File "+ strDescription+ " is not imported"
+    strTestCaseResult = "FAIL" 
+    log.Message strTCRemarks
+  End if  
+  
+  Set objTemp= Nothing
+  Set objLayout = Nothing 
+  
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sImport_FootNote', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+  
+End Sub
+
+'***********************************************************************************************************************
+'Testcase:TC_FR_PRT06:Check for Insert Link
+
+Sub sInsert_Link()
+
+  On Error Resume Next
+  Dim strTemp, objTemp, objCombobox, intColumnNumber,intRownumber, blnFlag
+  Dim objGridView,objFileAddress, objCell , FilePath , objLayout, objGrid
+  
+ blnFlag = False
+  
+  'Click on Insert Link
+  strTemp= "WPFObject(""ContentControlEx"", ""Insert Link"", 2)"
+  Call sObjClick(strTemp)  
+  Call sEdgeProcessor()
+  Delay 2000
+  
+  'Step 2 and 3 
+   DescText = "http://Test-" & Now
+  strTemp= "WPFObject(""LayoutGroup"", "", 1)"
+  Set objLayout = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  Delay 500
+'  strTemp ="WPFObject(""LinkTableControl"")"  
+  strTemp ="WPFObject(""LinkTableControl"")"
+  Set objGridView= objLayout.WPFObject("LayoutPanel", "", 2).FindChild("Name", strTemp, 50, True)
+  Call objGridView.DblClickCell(0, "Group")
+  Call objGridView.ClickCell(0, "Group")  
+  SYS.Keys "[Down][Enter]"
+  Delay(500)
+  
+  
+  
+  Call objGridView.DblClickCell(0, "File Name / Address")
+  Set objCell =objGridView.WPFObject("LinkTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1)
+  Set objFileAddress = objCell.WPFObject("LightweightCellEditor", "", 3).WPFObject("InplaceBaseEdit", "", 1).WPFObject("TextEdit", "", 1)  
+	Call objFileAddress.Keys(DescText)
+	Call objFileAddress.Keys("[Tab]")
+	Delay(500)
+	Set objFileAddress = objCell.WPFObject("LightweightCellEditor", "", 4).WPFObject("InplaceBaseEdit", "", 1).WPFObject("TextEdit", "", 1)  
+	Call objFileAddress.Keys(DescText)
+	Call objFileAddress.Keys("[Tab]")
+	Delay(500)
+  
+  
+  'Click on Import Button
+  strTemp= "WPFObject(""ContentControlEx"", ""Import"", 2)"
+  Set objTemp= objLayout.WPFObject("LayoutPanel", "", 2).FindChild("Name",strTemp,50,True) 
+  Call objTemp.Click()
+  Delay 5000
+  
+  'Click on OK button
+  strTemp= "WPFObject(""Button_OK"")"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Import Links").FindChild("Name", strTemp, 60, True)
+  Call objTemp.Click()
+  
+  'Close the insert Link Layout
+  Call sClosePanel2()
+  
+  'Verify the Footnote file is been added in the File Repository
+  strTemp= "WPFObject(""ContentControlEx"", ""Refresh"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  Call objTemp.click()
+  Call sEdgeProcessor()
+  strTemp = "WPFObject(""FileRepositoryTableControl"")"
+  Set objTemp= Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  
+  'Validating the Inserted Link
+  For I=0 to objTemp.wRowCount-1
+    If objTemp.wValue(I, "Description")= DescText  Then 
+        blnFlag = True
+        Exit For
+    End If
+  Next
+  
+  If blnFlag= True Then 
+    strTCRemarks = "The new Footnote link :" +DescText +" is added Sucessfully"
+    strTestCaseResult = "PASS" 
+    log.Message strTCRemarks
+  Else
+    strTCRemarks = "The new Footnote link :" +DescText +" is not Added"
+    strTestCaseResult = "FAIL" 
+    log.Message strTCRemarks
+  End if  
+  
+   If Err.Number > 0 Then
+    Log.Warning("Error in 'sInser_Link', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+    
+ 'Clear Memory 
+ Set objTemp = Nothing 
+ Set objGridView = Nothing 
+ Set objFileAddress= Nothing
+ Set objCell = Nothing  
+End Sub
+'*****************************************************************************************************************88
+''Testcase:TC_FR_PRT05:Check for 'Save' function
+Sub sEdit_SaveFootNote(strParameters)
+'Sub sEdit_SaveFootNote()
+  On Error Resume Next
+  
+  Dim strTemp, objTemp, intRownumber, strDescription, strModifyDesc, strValue, strPostDate, strFileName, blnFalg
+  Dim objGrid,objCell, objText
+  
+  strDescription = getSplitValue(strParameters,"Description")  
+  strModifyDesc =  getSplitValue(strParameters,"ModifyDesc")  
+'  strDescription= "Testing_FootNote_123"
+'  strModifyDesc = "Testing_FootNote"
+  
+  
+  blnFalg = False
+  
+  'Select the Required Footnote file
+  intRownumber =  sSelect_FootNote(strDescription)  
+
+  Call sEdgeProcessor()
+  
+ 
+  
+  'Edit Description
+  Dim nRow
+  nRow = intRownumber+1
+  strTemp= "WPFObject(""FileRepositoryTableView"")"
+  Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  Set objCell= objGrid.WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", nRow).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 4).WPFObject("InplaceBaseEdit", "", 1)  
+  Call objCell.Click()
+  Set objText = objCell.WPFObject("TextEdit", "", 1)
+  Delay 5000
+  Call objText.Keys("^a")
+  Delay 200
+  Call objText.Keys("[Del]")
+  'Delay 200 
+  Call objText.Keys(strModifyDesc)
+  Delay 200
+  Call objText.Keys("[Tab]")
+  Delay 200  
+  
+  'click on Save Button
+  strTemp= "WPFObject(""ContentControlEx"", ""Save"", 2)"  
+  Call sObjClick(strTemp)
+  Delay 4000 , "Please Wait fot sucessfull Message"
+  'Click on ok button on Sucessful Save window
+  strTemp= "WPFObject(""Button_OK"")"
+  Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Save File Repository changes").FindChild("Name",strTemp,60,True)
+  Call objTemp.click()
+  
+  
+  strTemp = "WPFObject(""FileRepositoryTableView"")"
+  Set objTemp= Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  strFileName = objTemp.SelectedRows.Item(0).FileName
+  strPostDate = Cstr(objTemp.SelectedRows.Item(0).PostDate)
+    
+  'Verification 
+  strTemp= "WPFObject(""FileRepositoryTableControl"")"
+  Set objTemp= Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  
+  
+  For I = 0 to objTemp.wRowCount-1
+    If objTemp.wValue(I, "Description")= strModifyDesc And _
+       Cstr(objTemp.wValue(I, "Post Date"))= strPostDate And _
+       objTemp.wValue(I, "Last Updated User Id")= Sys.UserName And _
+       objTemp.wValue(I, "File Name")= strFileName  Then   
+         blnFalg= True
+         Exit For
+  End If
+  
+  Next
+
+  If blnFalg = True then 
+     strTCRemarks = "Description of a file is updated from : " & strDescription&" To : " & strModifyDesc
+     strTestCaseResult = "PASS" 
+     log.Message strTCRemarks
+  Else
+     strTCRemarks = "Description of a file is not updated from : " & strDescription&" To : " & strModifyDesc
+     strTestCaseResult = "FAIL" 
+     log.Message strTCRemarks    
+  End IF
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sEdit_SaveFootNote', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear    
+  End If 
+ 
+ Set objTemp = Nothing 
+ Set objCell = Nothing 
+ Set objGrid = Nothing 
+ Set objText = Nothing 
+  
+End Sub

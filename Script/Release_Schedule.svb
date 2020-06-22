@@ -1,0 +1,1041 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+
+''**************************************************************
+'Start    : Execution starts from this procedure. 
+'Testcases: TC_RS_PRT10 -> TC_RS_PRT16
+'Start Date    : 03/11/2019
+'Created by: Chethana S R
+'************************************************************** 
+
+'Fucntion to open the window
+
+Function fOpenReleaseSchedule()
+
+  On Error Resume Next
+  Dim objEdgeMDI,strTemp,objTemp
+  Delay 2000 , "Please Wait"
+  
+  'Open Release schedule Window
+  Set objEdgeMDI = Sys.Process("EdgeClient")
+  If objEdgeMDI.Exists then
+    strTemp = "WPFObject(""TextBlock"", ""Release Schedule"", 1)"
+    Set objTemp=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+    If objTemp.Exists = False then      
+      strTemp="WPFObject(""ContentControl"", ""Release"", 1)"
+      Call sObjClick(strTemp)           
+    End If  
+  End If
+End Function 
+''******************************************************************************************************************************************************************************************
+'Function to select Country
+
+Function sSelectCountry(strParameters)
+'Function sSelectCountry()  
+
+  on Error Resume Next
+  Dim strTemp , objTemp
+  
+  strCountry=getSplitValue(strParameters,"Country")
+  'strCountry = "Test"
+  
+  strTemp = "WPFObject(""WrapPanel"", """", 1)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true) 
+  Set objCountry = objTemp.WPFObject("StackPanel", "", 1).WPFObject("ComboBox", "", 1)
+  objCountry.set_Text(strCountry)
+  Call sEdgeProcessor()
+  
+  strText = objCountry.Text
+  If strText = strCountry then
+    log.message "Country " + strText + " is selected in the Indicator Selector"
+  End If
+  
+  Set objTemp = nothing 
+  Set objCountry = Nothing 
+  
+End Function
+
+''******************************************************************************************************************************************************************************************
+'Testcase:TC_RS_PRT01-02: Verify Adding Category/indicator in Reslease Scedule module
+Sub sAddCategory(strParameters)
+'Sub sAddCategory()
+
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+  ' strTexting=getSplitValue(strParameters,"Text")
+   sType=getSplitValue(strParameters,"Type")
+   
+  
+  'Open Release Scedule Module
+  Call fOpenReleaseSchedule()
+  
+  
+  'Select the Country 
+  Delay 2000, "Please  Wait"
+  Call sSelectCountry(strParameters)
+  Call sEdgeProcessor()
+  Delay 2000, "Please  Wait"
+  
+  strTemp = "WPFObject(""WrapPanel"", """", 1)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+  Select case Ucase(sType)   
+    Case Ucase("Category")
+         Set objIndicator = objTemp.WPFObject("StackPanel", "", 2).WPFObject("Button", "+", 1)
+         strObjectName = "Category"
+    Case Ucase("Indicator")  
+         Set objIndicator = objTemp.WPFObject("StackPanel", "", 3).WPFObject("Button", "+", 1)
+         strObjectName = "Indicator"
+    Case Else
+  End Select 
+  
+  Call fObjectClick(objIndicator, strObjectName)
+  Delay 2000
+  
+  'Click on Add Button 
+  strTemp ="WPFObject(""Button"", ""Add"", 1)"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name",strTemp,50,true) 
+  strObjectName = "Add Button on Edit Release  Category"
+  Call fObjectClick(objTemp, strObjectName)
+  
+  Delay 2000
+  'Add Description And Description Local 
+  strTemp = "WPFObject(""GridControl"", """", 1)"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name",strTemp,50,true)
+  intcount = objTemp.wRowCount-1
+  
+  strTemp = "WPFObject(""TableView"", """", 1)"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name",strTemp,50,true) 
+
+  
+  DescText=Replace(aqDateTime.Now,"/","-")
+  DescText=Replace(DescText,":","_") 
+  
+  objTemp.DataContext.SourceCollection.Item(intcount).set_Description(DescText)
+  Delay 500
+  objTemp.DataContext.SourceCollection.Item(intcount).set_DescriptionLocal(DescText)
+  Delay 200
+  'Click on Save button 
+  
+  strTemp = "WPFObject(""Button"", ""Save"", 1)"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name",strTemp,50,true) 
+  strObjectName = "Save Button on Edit Release  Category"
+  Call fObjectClick(objTemp, strObjectName) 
+  Delay 2000
+  
+   'Click on Yes Button on Confirmation Window
+   strTemp = "WPFObject(""Button_Yes"")" 
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name",strTemp,50,true) 
+   strObjectName = "Yes Button on Confirmation window"
+   Call fObjectClick(objTemp, strObjectName) 
+   
+   'Click on Ok Button 
+   strTemp = "WPFObject(""Button_OK"")"
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Release Schedule Success").FindChild("Name",strTemp,50,true) 
+   strObjectName = "Yes Button on Confirmation window"
+   Call fObjectClick(objTemp, strObjectName) 
+   
+   'Once upload is successfull ,Click "Cancel" and say "Yes" for the message
+   strTemp = "WPFObject(""Button"", ""Cancel"", 2)"
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name",strTemp,50,true) 
+   strObjectName = "Cancel Button on Edit Release  Category"
+   Call fObjectClick(objTemp, strObjectName) 
+   
+   strTemp ="WPFObject(""Button_Yes"")"
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name",strTemp,50,true) 
+   strObjectName = "Yes Button on Confirmation window"
+   Call fObjectClick(objTemp, strObjectName)    
+   Call sEdgeProcessor()
+   
+     'Select the Added Caterogy to verify 
+   
+   strTemp = "WPFObject(""WrapPanel"", """", 1)"
+   Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true) 
+   Set objCategory = objTemp.WPFObject("StackPanel", "", 2).WPFObject("ComboBox", "", 1)
+   objCategory.set_Text(Desctext)
+   Call sEdgeProcessor()
+  
+   strText = objCategory.Text
+   If strText = DescText then
+     strTCRemarks = "The Added "+  sType   + " " + strText + " is dispalyed in "+ sType +" Drop Down"  
+     log.message "The Added "+  sType  + " " +strText + " is dispalyed in "+ sType +" Drop Down"  
+     strTestCaseResult="PASS"     
+   Else
+     strTCRemarks = "The Added "+  sType  + " " +strText + " is not dispalyed in "+ sType +" Drop Down"   
+     log.message "The Added "+  sType   + " " + strText + " is not dispalyed in "+ sType +" Drop Down"  
+     strTestCaseResult="FAIL"      
+   End If
+   
+   Set objCategory = Nothing 
+   Set objTemp = Nothing 
+   Set objIndicator = Nothing 
+   
+End Sub
+
+''******************************************************************************************************************************************************************************************
+'Function to click on specified object
+Function fObjectClick(object, strObjectName)
+  On Error Resume Next
+  
+  'Click on the Object
+    If object.Exists Then 
+      object.Click
+      'Call sEdgeProcessor()
+      strTCRemarks = strObjectName  + "is clicked"
+      log.message strObjectName  + "is clicked"
+    Else
+      log.message strObjectName  + "is not found"
+      strTCRemarks = strObjectName  + "is not found"
+    End If
+    
+    Set object = Nothing 
+    
+End Function
+
+''******************************************************************************************************************************************************************************************
+'Testcase:TC_RS_PRT03: Verify series should be attached to the indicator
+Sub sAttachSeries_Indicator(strParameters)
+'Sub sAttachSeries_indicator()
+
+  On Error Resume Next
+  Dim strTemp ,objTemp, blnFlag, strSID
+  
+  blnFlag = False
+  
+  
+  strSeriesID = getSplitValue(strParameters,"SeriesID") 
+  strDXCode =  getSplitValue(strParameters,"DXCode") 
+  strDXValue = getSplitValue(strParameters,"DXValue") 
+  strCount= getSplitValue(strParameters,"Count") 
+  strPrimaryID= getSplitValue(strParameters,"PrimaryID") 
+  strDetach= getSplitValue(strParameters,"Detach") 
+  
+  'Select Country , Category, Indicator, Frequency, and Schedule Type
+  Call sSetUpRSchedule(strParameters)
+  
+  'Testcase:TC_RS_PRT06: Detach The Set Primary Series
+  
+  If strDetach = "Yes" Then 
+    strTemp = "WPFObject(""ReleaseSeriesGridControl"")" 
+    Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+    intCont = objTemp.DataContext.Count
+    For I = 0 to intCont-1 
+      If  Cstr(objTemp.DataContext.Item(I).SeriesId) = Cstr(strPrimaryID) Then 
+        Call objTemp.ClickCell(I, "Series ID")
+        'Click On Detach Series Button
+        strTemp= "WPFObject(""ContentControlEx"", ""Detach Series"", 2)"
+        Call sObjClick(strTemp)
+        Delay 200
+        strTemp = "WPFObject(""TextBlock_Message"")"
+        Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Release Schedule Warning").FindChild("Name",strTemp,50,true)
+        If objTemp.Text  = "Cannot delete a primary series." Then 
+          strTemp = "WPFObject(""Button_OK"")"
+          Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Release Schedule Warning").FindChild("Name",strTemp,50,true)
+          objTemp.Click
+          strTCRemarks = "Cannot delete a primary series. Warning message appeared" 
+          log.message  "Cannot delete a primary series. Warning message appeared" 
+          strTestCaseResult="PASS"  
+          Exit Sub
+        Else
+          strTCRemarks = "Cannot delete a primary series. Warning message is not appeared" 
+          log.message  "Cannot delete a primary series. Warning message is not appeared" 
+          strTestCaseResult="FAIL"
+          Exit Sub  
+       End If
+      End If
+     Next  
+  End If
+  
+  'Click on "Attach Series" and enter the series id(365920767)  from  "A1" frequency and then "Save"  /Enter Dx Code
+  Select case Ucase(strDXCode) 
+      Case Ucase("Yes") 
+           strTemp="WPFObject(""ContentControlEx"", ""Attach Series"", 2)"    
+           'Click on Attach Series Button
+           Call sObjClick(strTemp)
+           strTemp = "WPFObject(""DxCodeTextEdit"")"
+          Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+          If objTemp.Exists Then 
+            objTemp.Keys(strDXValue)    
+          End If 
+      Case Ucase("No")  
+          Call fAttach (strSeriesID) 
+      Case Ucase("Mulitple") 
+          strSeriesID = split(strSeriesID, ",")
+          strSID = ""
+          For I = 0 to Ubound(strSeriesID)
+            strSID = strSID & strSeriesID(I)& Chr(13)
+          Next
+          Call fAttach (strSID)          
+         
+  End Select
+  'Click on Save Button
+  strTemp = "WPFObject(""Button"", ""Save"", 1)"
+  Call sObjClick(strTemp)
+  Call sEdgeProcessor()  
+  
+  If  strDXCode = "Mulitple" Then 
+    strTemp = "WPFObject(""ReleaseSeriesGridControl"")" 
+    Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+    For I = 0 to Ubound(strSeriesID) 
+      If  Cstr(objTemp.DataContext.Item(I).SeriesId) = strPrimaryID Then 
+        objTemp.DataContext.Item(I).set_Primary(1) 
+        Exit For
+      End If
+     Next    
+  End If 
+  
+  
+  'Click on "Upload", click 'ok' for the message , Once upload is successfull ,Say "Yes" to the message 
+  Call sUpload_Release_Schedule()
+  
+  'Verification for Seting Primary 
+  If  strDXCode = "Mulitple" Then 
+    strTemp = "WPFObject(""ReleaseSeriesGridControl"")" 
+    Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+    For I = 0 to Ubound(strSeriesID) 
+      If  Cstr(objTemp.DataContext.Item(I).SeriesId) = strPrimaryID  And objTemp.DataContext.Item(I).Primary = 1 Then 
+        strTCRemarks = "The  Series:  " + strPrimaryID + "is set to Primary"
+        log.message  "The  Series:  " + strPrimaryID + "is set to Primary"
+        strTestCaseResult="PASS" 
+        Exit Sub 
+      Else
+         strTCRemarks = "The  Series:  " + strPrimaryID + "is not set to Primary"
+         log.message  "The  Series:  " + strPrimaryID + "is not set to Primary"
+         strTestCaseResult="FAIL"      
+      End If
+     Next    
+  End If
+  
+  
+ 'Verify for attached series
+ 'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 2).WPFObject("Grid", "", 1).
+  strTemp ="WPFObject(""ReleaseSeriesGridControl"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  nCount = objTemp.DataContext.Count
+  For I = 0 to nCount-1
+    strSId = objTemp.DataContext.Item(I).SeriesId
+    If strSId = strSeriesID Then 
+      blnFlag = True
+      Call objTemp.ClickCell(I, "Series ID")
+      Call fDetach_Release_Schedule()
+      Exit For
+    End If
+  Next
+  
+  If blnFlag = True Then 
+    If strDXCode = "Yes" Then 
+      strTCRemarks = "DX Code " +   strDXValue + " is entered."
+      log.message "DX Code " +   strDXValue + " is entered."
+      strTCRemarks = strTCRemarks & "<br />" & "The attached Series: "+ strSeriesID +" is displayed in Release Schedule Control Section "
+      log.message strTCRemarks & "<br />" & "The attached Series: "+ strSeriesID +" is displayed in Release Schedule Control Section " 
+    Else
+      strTCRemarks = "The attached Series: "+ strSeriesID +" is displayed in Release Schedule Control Section "
+      log.message  "The attached Series: "+ strSeriesID +" is displayed in Release Schedule Control Section " 
+    End If 
+     
+     strTestCaseResult="PASS" 
+  Else
+     strTCRemarks = "The attached Series: "+ strSeriesID +" is displayed in Release Schedule Control Section "
+     log.message "The attached Series: "+ strSeriesID +" is displayed in Release Schedule Control Section " 
+     strTestCaseResult="FAIL"  
+  End If
+  
+End Sub
+
+''******************************************************************************************************************************************************************************************
+
+Function fSelect(strParameters, strType)
+'Function fSelect()
+
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+  strTemp = "WPFObject(""WrapPanel"", """", 1)"
+'  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 1).WPFObject("WrapPanel", "", 1)
+  'Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true) 
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 1).WPFObject("WrapPanel", "", 1)
+  Select case Ucase(strType)  
+    Case Ucase("Country")
+         Set objCombo = objTemp.WPFObject("StackPanel", "", 1).WPFObject("ComboBox", "", 1) 
+         'Set objCombo= WPFObject("StackPanel", "", 1).WPFObject("ComboBox", "", 1)
+         strValue= getSplitValue(strParameters,"Country")
+         strObjectName = "Country" 
+    Case Ucase("Category")
+         Set objCombo = objTemp.WPFObject("StackPanel", "", 2).WPFObject("ComboBox", "", 1)      
+         strValue= getSplitValue(strParameters,"Category")
+         strObjectName = "Category"
+    Case Ucase("Indicator")  
+         Set objCombo = objTemp.WPFObject("StackPanel", "", 3).WPFObject("ComboBox", "", 1)            
+         strValue= getSplitValue(strParameters,"Indicator")
+         strObjectName = "Indicator"
+    Case Ucase("Frequency") 
+         Set objCombo = objTemp.WPFObject("StackPanel", "", 4).WPFObject("ComboBox", "", 1)            
+         strValue=  getSplitValue(strParameters,"Frequency")
+         strObjectName = "Frequency"  
+  End Select 
+  
+  
+  If strType = "Frequency"  Or strType = "Indicator" then
+    objCombo.ClickItem(Cint(strValue))
+  Else
+  'msgbox strValue
+    objCombo.set_Text(strValue)
+  End If
+    
+  Call sEdgeProcessor()
+  
+  strText = objCombo.Text
+  If strText = strValue then
+    log.message "strObjectName " + strText + " is selected in " + strType + " Combobox"
+  End If
+  
+  Set objTemp = Nothing 
+  Set objCombo = Nothing 
+  
+End Function
+''******************************************************************************************************************************************************************************************
+
+Function sUpload_Release_Schedule()
+  On Error Resume Next
+  Dim strTemp, objTemp
+'  
+  'Click on Upload Button 
+  strTemp = "WPFObject(""ContentControlEx"", ""Upload"", 2)"
+  Call sObjClick(strTemp)
+  
+  'Click on Yes button on Confirmation window
+   strTemp ="WPFObject(""Button_Yes"")"
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name",strTemp,50,true) 
+   strObjectName = "Yes Button on Confirmation window"
+   Call fObjectClick(objTemp, strObjectName)
+   Delay 200    
+    
+   'Click on ok button on Confirmation window
+   strTemp ="WPFObject(""Button_OK"")"
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Release Schedule Success").FindChild("Name",strTemp,50,true) 
+   strObjectName = "Ok Button on Confirmation window"
+   Call fObjectClick(objTemp, strObjectName)    
+   Call sEdgeProcessor()
+   Set objTemp = Nothing 
+   
+  
+  'Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").WPFObject("CustomMessageBoxWindow", "Please Confirm", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_Yes")
+  
+End Function
+
+''******************************************************************************************************************************************************************************************
+
+Function fDetach_Release_Schedule()
+  
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+  'Click on Detach Series
+  strTemp = "WPFObject(""ContentControlEx"", ""Detach Series"", 2)"
+  Call sobjClick(strTemp)
+  
+  'Click on Ok Button on Confirmation window
+  strTemp = "WPFObject(""Button_Yes"")"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name",strTemp,50,true) 
+  strObjectName = "Yes Button on Confirmation window"
+  Call fObjectClick(objTemp, strObjectName)    
+  Call sEdgeProcessor()
+  
+  'Upload after Detached Series  
+  Call sUpload_Release_Schedule()
+  
+  Set objTemp = Nothing 
+End Function
+''******************************************************************************************************************************************************************************************
+'Testcase:TC_RS_PRT07: Verify for warning message after change primary series
+
+Sub sPrimaryWarning(strParameters)
+
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+   blnFlag = False
+  
+  
+  strSeriesID = getSplitValue(strParameters,"SeriesID") 
+  strDXCode =  getSplitValue(strParameters,"DXCode") 
+  strDXValue = getSplitValue(strParameters,"DXValue") 
+  strCount= getSplitValue(strParameters,"Count") 
+  strPrimaryID= getSplitValue(strParameters,"PrimaryID") 
+  strDetach= getSplitValue(strParameters,"Detach") 
+  strTextID= getSplitValue(strParameters,"TextID") 
+  
+  
+  'Select Country , Category, Indicator, Frequency, and Schedule Type
+  Call sSetUpRSchedule(strParameters)  
+  
+  'Add Scedule
+  
+  Call sAddSchedule_RS()
+  strTemp ="WPFObject(""HierarchyPanel"", """", 1)"
+  Set objRSC = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").FindChild("Name", strTemp, 10, True)
+  strCurrentSourceID = objRSC.DataContext.SourceCollection.Item(objRSC.DataContext.Count-1).SourceId 
+   
+  msgbox strCurrentSourceID
+   
+  'Attach the series '255467001' 
+    Call fAttach (strSeriesID) 
+  'Click on Save Button
+   strTemp = "WPFObject(""Button"", ""Save"", 1)"
+   Call sObjClick(strTemp)
+   Call sEdgeProcessor()  
+   
+  Delay 4000 
+   
+  'Click on the radio button to make series '255467001' as a primary series
+  strTemp = "WPFObject(""ReleaseSeriesGridControl"")" 
+  Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+  nCount = objTemp.DataContext.Count
+  For I = 0 to nCount-1   
+    If  Cstr(objTemp.DataContext.Item(I).SeriesId) = strSeriesID Then        
+      objTemp.DataContext.Item(I).set_Primary(1) 
+      nRowNumber = I
+      Exit For
+    End If
+  Next  
+  Delay 2000 
+  
+  strTemp= "WPFObject(""TextBlock_Message"")"
+  Set objText = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Primary Source change detected.").WPFObject("CustomMessageBoxWindow", "Primary Source change detected.", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("DockPanel", "", 1).FindChild("Name",strTemp,10,true)
+  strText = objText.wText
+  strTemp ="WPFObject(""Button_OK"")"
+  Set okButton = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Primary Source change detected.").WPFObject("CustomMessageBoxWindow", "Primary Source change detected.", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).FindChild("Name",strTemp,10,true)
+  okButton.Click
+  Delay 2000
+  strChangedSID = objRSC.DataContext.SourceCollection.Item(objRSC.DataContext.Count-1).SourceId 
+  
+  
+   'TC_RS_PRT07 and 08 Validation
+
+  If InStr(strText,strChangedSID )> 0  And strChangedSID <> strCurrentSourceID And strTextID = Cstr(strChangedSID) Then 
+    strTCRemarks = "Alert message : "& strText & "   warning message is displayed"    
+    strTCRemarks = strTCRemarks  & "<br />" & "Source name is updated to " & strChangedSID
+    log.message  strTCRemarks
+    strTestCaseResult="PASS"    
+  Else
+    strTCRemarks = "Alert message : "& strText & "   warning message is not displayed"
+    strTCRemarks = strTCRemarks  & "<br />" & "Source name is not updated to " & strChangedSID
+    log.message  strTCRemarks
+    strTestCaseResult="FAIL"          
+  End If
+ 
+
+  
+  strTCRemarks1 = strTCRemarks
+  
+  'Close Release Schedule window withour Uploding as Clean Up procedure
+  Call sCloseWithYes(1299)
+  Delay 1000  
+  strTCRemarks = strTCRemarks1
+End Sub
+
+''******************************************************************************************************************************************************************************************
+'Add Schedule in Release Schedule Module
+
+Function sAddSchedule_RS()
+ ''Schedule Type
+      Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("BarManager", "", 1).WPFObject("BarContainerControl", "", 1).WPFObject("BarControl", "", 1).WPFObject("BarItemLinkInfo", "", 7).WPFObject("BarEditItemLinkControl", "", 1).WPFObject("ContentControlEx", "", 1).WPFObject("ComboBoxEdit", "", 1)
+     If objTemp.Exists = True then
+        objTemp.set_Text("Final")
+          Call sEdgeProcessor
+     End If
+  
+      ''Adding New Schedule
+      Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("BarManager", "", 1).WPFObject("BarContainerControl", "", 1).WPFObject("BarControl", "", 1).WPFObject("BarItemLinkInfo", "", 1).WPFObject("BarButtonItemLinkControl", "", 1).WPFObject("ContentControlEx", "Add", 2)
+      If objTemp.Exists = True then
+        Delay 2000,"Pls Wait.."
+        objTemp.Click
+        Delay 2000,"Pls Wait.."
+        Call sEdgeProcessor
+      End If
+	
+       Set Grid=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl")
+        nRow = Grid.wRowCount
+       
+       Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", nRow).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WPFObject("InplaceBaseEdit", "", 1)
+       Delay 200
+       objTemp.Click
+       Sys.Keys (Date)
+       Delay 200
+       sys.Keys (Date)
+       Delay 200
+       Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 3).WPFObject("InplaceBaseEdit", "", 1)
+       objTemp.Click
+       Delay 200
+       
+       sAddSchedule_RS = nRow 
+       
+End Function 
+
+
+''******************************************************************************************************************************************************************************************
+
+
+'Testcase:TC_RS_PRT09: Verify Detach Series functionality 
+Sub sDetachSeries(strParameters)
+  
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+  
+  strSeriesID = getSplitValue(strParameters,"SeriesID")   
+  BnlFlag = True
+  
+  'Select Country , Category, Indicator, Frequency, and Schedule Type
+  Call sSetUpRSchedule(strParameters)
+  
+ 'Attach the series '255467001' 
+    Call fAttach (strSeriesID) 
+    strTCRemarks1 =  "Series: " & strSeriesID &  " is  Attached to the indicator"
+  'Click on Save Button
+   strTemp = "WPFObject(""Button"", ""Save"", 1)"
+   Call sObjClick(strTemp)
+   Call sEdgeProcessor() 
+   
+  'Upload after Attaching Series  
+  Call sUpload_Release_Schedule()
+  
+  'Open Release Schedule to Detach series
+  
+  'Click on the radio button to make series '255467001' as a primary series
+  strTemp = "WPFObject(""ReleaseSeriesGridControl"")" 
+  Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+  nCount = objTemp.DataContext.Count
+  For I = 0 to nCount-1
+    If  Cstr(objTemp.DataContext.Item(I).SeriesId) = strSeriesID Then 
+      Call objTemp.ClickCell(I, "Series ID")
+      Call fDetach_Release_Schedule()
+      'Upload after Attaching Series  
+      'Call sUpload_Release_Schedule()
+      Exit For
+    End If
+  Next  
+  Delay 2000 
+  
+  'Upload after Attaching Series  
+  'Call sUpload_Release_Schedule()
+  
+  'Open Release Schedule to Detach series
+  
+  'Click on the radio button to make series '255467001' as a primary series
+    strTemp = "WPFObject(""ReleaseSeriesGridControl"")" 
+    Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+    nCount = objTemp.DataContext.Count
+    For I = 0 to nCount-1
+      If  Cstr(objTemp.DataContext.Item(I).SeriesId) = strSeriesID Then 
+        BnlFlag = False
+       Exit For
+      End If
+    Next
+ 
+    If BnlFlag = True Then 
+      strTCRemarks =  strTCRemarks1 & "<br />" & "Series: " & strSeriesID &  " is  detached from the indicator"
+      log.message  "Series: " & strSeriesID &  "is  detached from the indicator"
+      strTestCaseResult="PASS"
+    Else
+      strTCRemarks = strTCRemarks1 & "<br />" &  "Series: " & strSeriesID &  " is  not detached from the indicator"
+      log.message  "Series: " & strSeriesID &  "is  Not detached from the indicator"
+      strTestCaseResult="FAIL"
+    End If
+End Sub
+
+''******************************************************************************************************************************************************************************************
+'Testcase:TC_RS_PRT10_11: Verify Add New Scedule
+
+Sub sAddNewSchedule(strParameters)
+
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+   
+  ' Select Country , Category, Indicator, Frequency, and Schedule Type
+   Call sSetUpRSchedule(strParameters) 
+   
+    strDetatch = getSplitValue(strParameters,"Detach")  
+
+     'Click on Add Button   
+    Call sAddStartEndTime()
+    
+    
+   'Click UPload Button
+   Call sUpload_Release_Schedule() 
+   Call sEdgeProcessor()
+  
+  'Verify Added Estimated start time & Estimated end time
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView")
+  intCnt = objTemp.DataContext.SourceCollection.Count
+  strStartTime  = objTemp.DataContext.SourceCollection.Item(intCnt-1).RsDateFrom
+  strEndTime = objTemp.DataContext.SourceCollection.Item(intCnt-1).RsDateTo
+  
+  If  Date =  strStartTime And Date =  strEndTime then
+    strTCRemarks =   "New Schedule is added"
+    strTCRemarks1 =   "New Schedule is added"
+    log.message  "New Schedule is added"
+    strTestCaseResult="PASS"      
+  Else
+    strTCRemarks =   "New Schedule is not added"
+    strTCRemarks1 =   "New Schedule is not added"
+    log.message  "New Schedule is not added"
+    strTestCaseResult="PASS"
+  End if 
+  
+  If strDetatch = "Yes" Then 
+  
+    'Delet the Added Schedule   
+    Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl")
+    intRCnt = objTemp.DataContext.Count  
+    Call objTemp.ClickCell(intRCnt-1, "Timepoint Date")
+    strTemp = "WPFObject(""ContentControlEx"", ""Delete"", 2)"
+    Call sObjClick(strTemp)
+    'Clcik on Yes button on Confirm window
+    strTemp ="WPFObject(""Button_Yes"")"
+    Set objYes = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name",strTemp,50,true)
+    Call objYes.Click  
+  
+    'Click UPload Button
+    Call sUpload_Release_Schedule() 
+    Call sEdgeProcessor()
+  
+    Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView")
+    intRCnt = objTemp.DataContext.SourceCollection.Count
+    strStartTime  = objTemp.DataContext.SourceCollection.Item(intRCnt-1).RsDateFrom
+    strEndTime = objTemp.DataContext.SourceCollection.Item(intRCnt-1).RsDateTo
+  
+    If  Date <>  strStartTime And Date <>  strEndTime then
+      strTCRemarks =   strTCRemarks1 & "<br />" & "Added Schedule is Deleted"
+      log.message  strTCRemarks =   strTCRemarks1 & "<br />" & "Added Schedule is Deleted"
+      strTestCaseResult="PASS" 
+    Else
+       strTCRemarks =   strTCRemarks1 & "<br />" & "Added Schedule is Deleted"
+      log.message  strTCRemarks =   strTCRemarks1 & "<br />" & "Added Schedule is Deleted"
+      strTestCaseResult="PASS" 
+    End If
+  End If
+  
+  
+  Set objTemp= Nothing 
+  Set objGrid = Nothing 
+  
+End Sub
+
+'**************************************************************************************************************************************************************
+'Set up Release Schedule Module
+Sub sSetUpRSchedule(strParameters)
+  On Error Resume Next
+  
+   strScheduleTypeOption = getSplitValue(strParameters,"ScheduleTypeOption") 
+   strScheduleType = getSplitValue(strParameters,"ScheduleType")    
+  'Open Release Scedule Module
+  Call fOpenReleaseSchedule() 
+    
+  'Select Country "Hong Kong"
+  Call fSelect(strParameters,"Country")
+  Delay 2000 
+  
+  'Select Category "Balance of Payments"  
+  Call fSelect(strParameters,"Category")
+  Delay 2000 
+  'Select Indicator "Balance of Payments"
+  Call fSelect(strParameters,"Indicator")
+  Delay 2000 
+  'Select any Frequency ex: M
+  Call fSelect(strParameters,"Frequency")
+  
+  If strScheduleTypeOption = "Yes" then 
+    'Select the Schedule Type "Final
+     Set objTemp = Aliases.EdgeClient.HwndSource_Shell.Shell.Grid.ContentControl.Grid.PART_RibbonLayout.Part_WindowContent.Grid.ContentControl.PART_ContainerContent.BarManager.DockPanel.DockLayoutManager.LayoutGroup.LayoutPanel.LayoutPanelContentPresenter.Root.AdornerDecorator.AdornedControl.Grid.GroupBox2.BarContainerControl.BarControl.ComboBoxEdit
+     objTemp.SetText(strScheduleType)
+     Delay 200   
+  End If
+
+  
+    
+End Sub
+
+'#############################################################################################################################################################################################################################
+'Testcase:TC_RS_PRT12: Verify 'Fill' button functionality 
+Sub sAutoFill(strParameters)
+
+   On Error Resume Next
+   Dim strTemp, objTemp
+  
+   strNumber = getSplitValue(strParameters,"Number")  
+  
+   'Select Country , Category, Indicator, Frequency, and Schedule Type
+   Call sSetUpRSchedule(strParameters)
+  
+  'Enter Estimated Start Time and End Time 
+   Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView")
+   intRcnt = objGrid.DataContext.Count +1 
+  
+  'Enter '5' in 'Add' button combobox
+   strTemp= "WPFObject(""SpinEdit"", """", 1)"
+  'Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).FindChild("Name",strTemp,50,True) 
+   Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)  
+   Call objTemp.SetText(strNumber)
+  
+   'Click on Add Button     
+   strTemp = "WPFObject(""ContentControlEx"", ""Add"", 2)"
+   Call sObjClick(strTemp)
+   
+     
+   strTemp  =DatePart("m",aqDateTime.Now)    
+   Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRCnt).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WPFObject("InplaceBaseEdit", "", 1)
+   objTemp.Click
+   sys.Keys strTemp
+   Delay 2000
+  
+   Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRCnt).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 3).WPFObject("InplaceBaseEdit", "", 1)
+   objTemp.Click
+   Delay 2000  
+  
+    'Click on 'Fill'
+    strTemp = "WPFObject(""ContentControlEx"", ""Fill"", 2)" 
+    Call sObjClick(strTemp)
+    Dealy 2000  
+    'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl")
+    intCnt = 0 
+    intRcnt = objGrid.DataContext.SourceCollection.Count
+    For I = strNumber to 1 step-1
+        'strStart = objGrid.DataContext.SourceCollection.Item(intRcnt-1).RsDateFrom
+        strEndTime = objGrid.DataContext.SourceCollection.Item(intRcnt-1).RsDateTo
+        strRequiredDate = DateAdd("m", I-1, Date)
+        intRcnt =  intRcnt-1 
+        If strEndTime = strRequiredDate Then 
+          intCnt = intCnt +1          
+        End If
+    Next 
+    
+    If intCnt = Cint(strNumber)  Then 
+      strTCRemarks =   "The Schedule's End Time are sequential from the First End Time"
+      log.message  "The Schedule's End Time are sequential from the First End Time"
+      strTestCaseResult="PASS" 
+    Else
+      strTCRemarks =   "The Schedule's End Time are not sequential from the First End Time"
+      log.message  "The Schedule's End Time are not sequential from the First End Time"
+      strTestCaseResult="FAIL"      
+    End If
+    
+    'Clean UP Process
+     strTemp= "WPFObject(""SpinEdit"", """", 1)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)  
+   Call objTemp.SetText("1")
+    Call sDescardChanges()
+    
+    'Testcase:TC_RS_PRT15: Verify Discard Cahnged Fucntionality 
+    If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_RS_PRT15"))Then
+      intRcnt = objGrid.DataContext.Count
+      If intRcnt = 0 then 
+            strTCRemarks = "The Discard Changes functionality is as expected."
+            log.message  "The Discard Changes functionality is as expected."
+           strTestCaseResult="PASS"
+      Else
+           strTCRemarks = "The Discard Changes functionality is not as expected."
+           log.message  "The Discard Changes functionality is not as expected."
+           strTestCaseResult="FAIL"      
+    End If
+   End If
+
+    
+    Set objGrid = Nothing 
+    Set objTemp= Nothing 
+
+  
+  
+End Sub
+
+'###################################################################################################################################################################33
+
+Function sAddStartEndTime()
+
+  On Error Resume Next
+  
+  'Click on Add Button   
+   strTemp = "WPFObject(""ContentControlEx"", ""Add"", 2)"
+   'Set objTemp= Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+   Call sObjClick(strTemp)
+   Call sEdgeProcessor()
+    Delay 2000
+  
+    'Enter Estimated start time & Estimated end time
+    Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView")
+    intRCnt = objGrid.DataContext.Count
+    'intRCnt =  objGrid.DataContext.SourceCollection.Count
+    strTemp  =DatePart("m",aqDateTime.Now)
+    Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "",intRCnt ).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WPFObject("InplaceBaseEdit", "", 1)
+    objTemp.Click
+    sys.Keys strTemp
+    Delay 2000
+    Set objTemp=Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRCnt).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 3).WPFObject("InplaceBaseEdit", "", 1)
+    objTemp.Click
+    'sys.Keys strTemp
+    Delay 2000
+    
+    If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_RS_PRT13"))or  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_RS_PRT14"))Then
+      Set objTemp= Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRCnt).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WPFObject("InplaceBaseEdit", "", 1)
+      strTimepointDetails =   objTemp.DisplayText
+    End If
+
+    
+End Function
+
+'#################################################################################################################################################################
+Function sDescardChanges()
+
+  On Error Resume Next
+  Dim strTemp, objTemp
+  
+    
+  'Click on Discard Changes Button
+  strTemp = "WPFObject(""ContentControlEx"", ""Discard Changes"", 2)"
+  Call sObjClick(strTemp)
+  Delay 500
+  
+  'Click on Yes button on Confirmation Button
+  strTemp = "WPFObject(""Button_Yes"")"
+  Set objYes = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name",strTemp,50,true)
+  Call objYes.Click 
+  
+End Function
+
+'#################################################################################################################################################################
+'Testcase:TC_RS_PRT13: Verify "Release status" of that schedule should be changed to "Released" and Actual Released Time should be filled
+Sub sScheduleUpdate(strParameters)
+
+   on Error Resume Next
+   Dim strTemp, objTemp
+   strRevised =  getSplitValue(strParameters,"Revised")
+   
+'   'Add new Schedule and upload the schedule
+    Call sAddNewSchedule(strParameters)
+'   
+'   
+   
+   'Serach for Primary ID
+   strTemp = "WPFObject(""ReleaseSeriesGridControl"")" 
+   Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+   nCount = objTemp.DataContext.Count
+   For I = 0 to nCount-1
+     If  objTemp.DataContext.Item(I).Primary = 1 Then 
+       strSeriesID = objTemp.DataContext.Item(i).SeriesId 
+       Exit For
+     End If
+   Next  
+   Delay 2000 
+ 
+   
+   'Open Global STP for the Given  Seires using Series Search    
+   Call sSeriesSearch(strSeriesID)
+   
+  'Upload STP for the Given SeiresID  
+   Call sVerifyTimepointDate(strParameters, strSeriesID)
+   
+   
+  'Close the Search Series Window
+  Call Source_tree_close()
+  
+  'click on Refresh Button 
+  strTemp = "WPFObject(""ContentControlEx"", ""Refresh"", 2)"
+  Call sObjClick(strTemp)
+  Call sEdgeProcessor()  
+  
+  'Verify Release status for the added timpoint:
+    Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl")
+    intCnt = objGrid.DataContext.SourceCollection.Count
+    strTimePoint = objGrid.DataContext.SourceCollection.Item(intCnt-1).Timepoint
+    strReleaseStatus = objGrid.DataContext.SourceCollection.Item(intCnt-1).ScheduleStatusId
+    strActual = objGrid.DataContext.SourceCollection.Item(intCnt-1).RsDateActual
+    If Ucase(Trim(strRevised))= Ucase(Trim("Yes")) Then 
+      strRequiredStatus = "1"      
+    Else
+      strRequiredStatus = "3"      
+    End If
+    If Cstr(strTimePoint) = strTimepointDetails  And  strReleaseStatus = strRequiredStatus Then 
+        strTCRemarks =    "The 'Release status' of that Added schedule " & strTimePoint & " is changed to 'Released' and Actual Released Time is filled"
+        log.message  "The 'Release status' of that Added schedule " & strTimePoint & " is changed to 'Released' and Actual Released Time is filled"
+        strTestCaseResult="PASS" 
+    Else
+        strTCRemarks =    "The 'Release status' of that Added schedule " & strTimePoint & " is not changed to 'Released' and Actual Released Time is not filled"
+        log.message  "The 'Release status' of that Added schedule " & strTimePoint & " is not changed to 'Released' and Actual Released Time is not filled"
+        strTestCaseResult="FAIL"   
+    End If
+    
+End Sub
+
+
+'################################################################################################################################################################3
+'Close the Source Tree:
+Sub Source_tree_close()
+  Dim edgeClient
+  Dim hwndSource
+  Set edgeClient = Aliases.EdgeClient
+  Set hwndSource = edgeClient.HwndSource_Shell
+  hwndSource.Activate
+  Call hwndSource.Shell.Grid.ContentControl.Grid.PART_RibbonLayout.Part_WindowContent.Grid.ContentControl.PART_ContainerContent.BarManager.DockPanel.DockLayoutManager.LayoutGroup.LayoutPanel2.ClickR(373, 9)
+  Call edgeClient.HwndSource_PopupRoot.PopupRoot.Decorator.NonLogicalAdornerDecorator.BarPopupBorderControl4.PopupMenuBarControl.BaritemlinkinfoClose.BarbuttonitemlinkcontrolClose.ContentcontrolexClose.Click(2, 7)
+  Call edgeClient.HwndSource_CustomMessageBoxWindow5.CustomMessageBoxWindow2.Grid.Grid.PART_ContentOffset.Grid.PART_ContainerContent.Grid.Grid.DockPanel.Button_Yes.RenderContentPresenterElement.Label_Yes.Click(5, 10)
+End Sub
+
+'################################################################################################################################################################3
+''Testcase:TC_RS_PRT16: Verify User rights to change the Release Status of a Release Scedule
+
+Sub SReleaseStatusChange(strParameters)
+'Sub sReleaseStatusChange()
+  
+  on Error Resume Next
+  Dim strTemp, objTemp
+  strRevised =  getSplitValue(strParameters,"Revised")
+  'strEnvi = "Edge ( US Integration )" 
+  
+   
+  ' Select Country , Category, Indicator, Frequency, and Schedule Type
+   Call sSetUpRSchedule(strParameters) 
+  
+   
+   'Click on Add button to display Scedule 
+   strTemp = "WPFObject(""ContentControlEx"", ""Add"", 2)"
+   Call sObjClick(strTemp)
+   
+   'Verify Right to Change Stauts
+   Set objTemp =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 7).WPFObject("PART_Editor")
+   objTemp.Click()
+   
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 1).WPFObject("ReleaseScheduleGridControl").WPFObject("ReleaseScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 7).WPFObject("PART_Editor").WPFObject("ButtonsControl", "", 2).WPFObject("ButtonContainer", "", 1).WPFObject("Border", "", 1).WPFObject("PART_Item")
+   objTemp.Click 
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: PopupRoot", "").WPFObject("PopupRoot", "", 1).WPFObject("Decorator", "", 1).WPFObject("NonLogicalAdornerDecorator", "", 1).WPFObject("PopupBorderControl", "", 1).WPFObject("PopupContentContainer", "", 1).WPFObject("NonLogicalDecorator", "", 1).WPFObject("PopupContentControl", "", 1)
+   If objTemp.Exists Then 
+      strTCRemarks =    "User has the Right To change the Release Status"
+      log.message  "User has the Right To change the Release Status"
+     strTestCaseResult="PASS" 
+   Else
+      strTCRemarks =    "User does not have Right To change the Release Status"
+      log.message  "User has the Right To change the Release Status"
+     strTestCaseResult="PASS" 
+      
+   End If  
+   
+'  '   Clean Up    
+    Call sCloseWithYes(1299)
+    Delay 1000  
+  
+End Sub
+
+
+

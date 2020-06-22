@@ -1,0 +1,2098 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+
+Public DescText,DescLocalText,IntRowCnt,strSource_Name,strLevel2src_Name,strLevel3src_Name,intRowHandle1,blnFlag,intchildcnt,strUnit,strCategory,strTPDate
+Public sLoadGrid,strWorkSpaceName, strCurrentSSchedule
+
+
+
+''**************************************************************
+'Start    : Execution starts from this procedure. 
+'Testcases: Add new Schedule to the series.
+'Start Date    : 26/11/2018
+'Created by: Chethana S R
+'************************************************************** 
+
+'Testcase:TC_SS_PRT01: Verify newly Added Schedule refects correctly or not.
+
+
+Sub sOpenSelectedSS(strParameters)
+
+On Error Resume Next
+  
+  Dim intRow,strTemp,objTemp,Grid,intI,strTimepoint
+  Dim objEdge,objCaption,i,objText,j,strWrkSpaceName,strDesc1,strDesc2
+
+    strSource_Name=getSplitValue(strParameters,"SOURCE")
+    strLevel2src_Name=getSplitValue(strParameters,"LEVEL2SOURCE")
+    strLevel3src_Name=getSplitValue(strParameters,"LEVEL3SOURCE")
+'   strSeriesID = getSplitValue(strParameters,"SeriesID")
+'   strScheduleStatus = getSplitValue(strParameters,"ScheduleStatus")
+    
+   ' strEnvi = "Edge ( US Integration )"    
+    
+    
+  ' Open for Edit Source
+   Call sOpenSourceWorkSpace(strParameters)  
+   Call sEdgeProcessor() 
+   
+  'selcet the resquired series to add schedule
+  Call sOpenSSchedule(strParameters)
+  Delay 2000
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenSelectedSS', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+
+'******************************************************************************************************************************************
+Sub sAddSchedule(strParameters)
+'Sub sAddSchedule()
+
+On Error Resume Next 
+
+    Dim intRow,strTemp,objTemp,Grid,intI,strTimepoint
+    Dim objEdge,objCaption,i,objText,j,strWrkSpaceName,strDesc1,strDesc2
+
+
+  Call sOpenSelectedSS(strParameters)
+  Delay 2000 , "Please wait"
+  
+   'Set the Schedule type to Final 
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("BarManager", "", 1).WPFObject("BarContainerControl", "", 1).WPFObject("BarControl", "", 1).WPFObject("BarItemLinkInfo", "", 7).WPFObject("BarEditItemLinkControl", "", 1).WPFObject("ContentControlEx", "", 1).WPFObject("ComboBoxEdit", "", 1)  
+   objTemp.SetText("Final")
+  
+   Delay 200
+  
+  'Click on Add button 
+  strTemp = "WPFObject(""ContentControlEx"", ""Add"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  If objTemp.Enabled Then 
+    objTemp.Click 
+    Delay 500 
+  End If 
+  
+  Delay 3000,"Pls Wait.."
+ 
+ 'Provide the Estimated Release Start and End Time  
+'  strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")" 
+'  Set objGrid  = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+'  Dim intCellNumber
+'  'intCellNumber = objGrid.wRowCount-1
+'  intCellNumber = objGrid.VisibleRowCount
+'  Call objGrid.ClickCell(0, "Timepoint Date")
+'  Call objGrid.ClickCell(intCellNumber, "Estimated Release Start Time") 
+'  sys.Keys DatePart("m",aqDateTime.Now )
+'  Call objGrid.ClickCell(intCellNumber, "Estimated Release End Time")
+'  sys.Keys DatePart("m",aqDateTime.Now )
+'  Delay 200 
+
+  strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")" 
+  Set objGrid  = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl")
+  RowCnt = objGrid.VisibleRowCount
+ 
+  Set objRow = objGrid.WPFObject("SourceSeriesScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", RowCnt).WPFObject("CellsControl", "", 1)
+  Set sEstimatedStartDate = objRow.WPFObject("LightweightCellEditor", "", 3).WPFObject("InplaceBaseEdit", "", 1)
+  Set sEstimatedEndDate = objRow.WPFObject("LightweightCellEditor", "", 4).WPFObject("InplaceBaseEdit", "", 1)
+  
+  sEstimatedStartDate.Click
+  sys.Keys DatePart("m",aqDateTime.Now )
+  sEstimatedEndDate.Click
+  sys.Keys DatePart("m",aqDateTime.Now )
+  DescText = objGrid.DataContext.SourceCollection.Item(RowCnt-1).Timepoint  
+  
+  
+  If Ucase(Trim(strRequiredTCName))=Ucase(Trim("TC_SS_PRT01"))Then   
+    
+     'Save the Workspace
+     Call fSaveSSWorkspace() 
+     Call sEdgeProcessor()         
+     Call sCloseSWV() 
+      
+
+     'Open the Saved Source Schedule
+      Call fOpenSavedWorkspace()
+  
+      'Select the saved series
+      Call sOpenSSchedule(strParameters)
+  
+      strNewStartTime = objStartTime.DisplayText
+  
+      If strNewStartTime = DescText then
+         strTCRemarks = "The Added schedule is Saved "
+         strTestCaseResult = "PASS"
+      Else
+         strTCRemarks = "The Added schedule is not Saved "
+         strTestCaseResult = "PASS"
+      End If
+     'Call sCloseSWV()
+  End If
+ 
+ Set objTemp = Nothing 
+ Set objGrid= Nothing 
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sAddSchedule', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+
+'*******************************************************************************************************************************************************************
+'Function to Save the source scedule Workspace 
+Sub fSaveSSWorkspace()
+
+On Error Resume Next
+'Saving the Workspace
+
+    
+    strTemp="WPFObject(""ContentControlEx"", ""Workspace"", 2)"
+    Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+    If objTemp.Exists Then
+      objTemp.Click      
+      strTemp="WPFObject(""ContentControlEx"", ""Save Workspace"", 2)" 
+      Set objTemp=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+     
+      'Click on save Workspace Button
+      If objTemp.Exists Then  
+         objTemp.Click
+          'strTemp = 
+         Set objYes = Sys.Process("EdgeClient").WPFObject("HwndSource: WindowContentHolder", "Confirm save.").WPFObject("WindowContentHolder", "Confirm save.", 1).WPFObject("NonLogicalDecorator", "", 1).WPFObject("ThemedManagedContentPresenter", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("DXMessageBox", "", 1)   
+         If objYes.Exists Then
+          'Call Aliases.EdgeClient.HwndSource_WindowContentHolder5.WindowContentHolder2.NonLogicalDecorator.ThemedManagedContentPresenter.Grid.Grid.PART_ContentOffset.Grid.PART_ContainerContent.DXMessageBox.Click(226, 89)
+          Call objYes.Click(226, 89)
+          Delay 2000
+          set objOK = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "").WPFObject("CustomMessageBoxWindow", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_OK")
+          if objOK.Exists then 
+            objOK.Click
+          End if               
+         End If          
+      End If
+    End If
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fSaveSSWorkspace', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If             
+End Sub 
+
+'***********************************************************************************************************************************************************************************************************88
+
+'Function to Open Saved Source Schedule Workspace
+
+Function fOpenSavedWorkspace()
+  
+  On Error Resume Next
+
+
+  strTemp = "WPFObject(""ContentControl"", ""Source Workspace"", 1)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  'Click on Source Workspace Viewer button
+  If objTemp.Exists Then 
+    objTemp.Click 
+    Call sEdgeProcessor()
+    Delay 500
+  End If
+  
+  'Click on SourceSchedule button
+  strTemp ="WPFObject(""ContentControlEx"", ""Source Schedules"", 2)" 
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  If objTemp.Exists Then 
+    objTemp.Click 
+    Call sEdgeProcessor()
+    Delay 500
+  End If
+  
+  
+  'Open the Saved Workspace  
+  strTemp = "WPFObject(""PendingChangeGridControl"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  If objTemp.Exists Then 
+    Call objTemp.DblClickCell(0, "Workspace Name")  
+    Call sEdgeProcessor()
+    Delay 500
+    
+    'Close the Source Workspace Viewer
+    Call sCloseSWV()
+  End If  
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fOpenSavedWorkspace', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If        
+End Function 
+
+'****************************************************************************************************************************************************************************
+
+Sub sOpenSSchedule(strParameters)
+
+on Error Resume Next 
+
+  ' 'Expand All Source
+  Delay 2000 , "Please Wait"
+  strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  If objTemp.Exists Then 
+     objTemp.Click  
+     Delay 200
+  End If
+   
+  
+ 'Select the Level3 Source  
+  Call sGridSelection(strParameters)
+  Call sEdgeProcessor()  
+  
+  Delay 1000
+  strTemp = "WPFObject(""GridSplitter"", """", 1)"
+  Set objTemp =Sys.Process("EdgeClient").FindChild("Name",strTemp,60,True)
+  Call objTemp.Drag(2, 266, -194, -19)
+  Delay 1000
+  
+  'Select the First Series
+  strTemp = "WPFObject(""SourceSeriesGridControl"")"
+  Set objTemp =   Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesGridControl").WPFObject("TableView", "", 1).WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WPFObject("InplaceBaseEdit", "", 1)
+ 
+  If objTemp.Exists Then 
+    objTemp.Click
+    Delay 2000
+  End If
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sOpenSSchedule', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+'*********************************************************************************************************************************************************8888
+
+'Testcase:TC_SS_PRT02: Upload and verify the added schedule is appeared or not
+Sub sUploadSchedule(strParameters)
+'Sub sUploadCopyFolder()
+
+    'msgbox strName(0)
+
+  On Error Resume Next
+  Dim strTemp, objGridControl, objTemp, intRequiredRowNumber, blnFlag, blnReg
+  blnFlag = False
+  
+  'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor() 
+    
+   'Open the uploaded scedule
+    ' Open for Edit Source
+   Call sOpenSourceWorkSpace(strParameters)  
+   Call sEdgeProcessor() 
+   
+  'selcet the resquired series to add schedule
+  Call sOpenSSchedule(strParameters)
+  Delay 1000
+  
+  strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")" 
+  Set objGrid  = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+ 
+  Set objStartTime = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl").WPFObject("SourceSeriesScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", objGrid.VisibleRowCount).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 3).WPFObject("InplaceBaseEdit", "", 1)
+  strNewStartTime = objStartTime.DisplayText
+  
+  If strNewStartTime = DescText then
+     strTCRemarks = "The Added schedule is Uploaded "
+     strTestCaseResult = "PASS"
+  Else
+     strTCRemarks = "The Added schedule is not Uploaded "
+     strTestCaseResult = "PASS"
+  End If
+  
+  'Close the Source Scedule Window
+  Call sCloseSWV()
+  Delay 200
+  
+ 'Drop the opened Sceduel
+ 'Call fDropWorkspace(strParameters)
+ Call sSourceScheduleDrop() 
+
+ If Err.Number > 0 Then
+    Log.Warning("Error in 'sUploadSchedule', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+ End If
+End Sub
+'**************************************************************************************************************************************************************
+
+''Testcase:TC_SS_PRT03: Verify adding future timepoint date
+Sub sAddTimePoint(strParameters)
+'Sub sAddTimePoint()
+
+On Error Resume Next 
+    Dim intRow,strTemp,objTemp,Grid,intI,strTimepoint
+    Dim objEdge,objCaption,i,objText,j,strWrkSpaceName,strDesc1,strDesc2
+
+    'Retrive data from Datatable
+    strSeriesID = getSplitValue(strParameters,"SeriesID")
+  
+'    strEnvi = "Edge ( US Integration )"    
+'    SeriesID = "421317647"
+     
+   'Open the Required Source Schedule   
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please Wait..."
+   
+   'Click on reuired Series Id
+    
+  ' Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesGridControl")
+   intRowCnt = fGetSeriesIDRow(strSeriesID)
+   Set objTemp =   Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesGridControl").WPFObject("TableView", "", 1).WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", intRowCnt+1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WPFObject("InplaceBaseEdit", "", 1)
+   Call objTemp.Click
+    Delay 200 
+    
+    
+    'Get the TimePoint Detials    
+   Set objGrid =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl")
+   cnt= objGrid.VisibleRowCount
+  DescText = objGrid.DataContext.SourceCollection.Item(cnt-1).Timepoint
+  
+  'Click on Series Serach Button to select the required Series Id
+   strTemp = "WPFObject(""ContentControl"", ""Series"", 1)"
+   Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+
+   If objTemp.Enabled Then 
+     objTemp.Click
+     strTemp  = "WPFObject(""ContentControlEx"", ""Search on Source Tree"", 2)"
+     Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+     objTemp.Click
+     Call sEdgeProcessor()    
+   End If
+  
+  'Enter the required Series Id in Source Series  dialog:
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("PART_FilterRow").WPFObject("ContentPresenter", "", 1).WPFObject("FilterCellContentPresenter", "", 1).WPFObject("TextEdit", "", 1)
+   If objTemp.Exists Then 
+    objTemp.Click
+    sys.Keys(strSeriesID)
+    Sys.Keys("[Enter]")
+    Delay 5000, "Please Wait..."
+    Call sSeries_Search_Delay_layout2()
+    strTemp = "WPFObject(""InplaceBaseEdit"", """", 1)"
+    Set objPrimarySource= Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WaitChild(strTemp,1000000) 
+    Delay 10000, "Please wait..."
+    Call objPrimarySource.Click 
+   End if
+  
+  
+ 'Select the Dispalied Row and open Global STP
+    'Clickon Open Global STP button   
+    strTemp = "WPFObject(""ContentControlEx"", ""Open Global STP"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    If objTemp.IsEnabled then 
+      objTemp.Click
+    End If
+ 
+   Delay 5000,"Opening STP.. Pls wait.."
+   Call sExcelFullHistory()   
+   Call sVerifyTimepointDate(strParameters, strSeriesID)   
+   Delay 2000
+   'Set the Schedule type to Final 
+     Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("BarManager", "", 1).WPFObject("BarContainerControl", "", 1).WPFObject("BarControl", "", 1).WPFObject("BarItemLinkInfo", "", 7).WPFObject("BarEditItemLinkControl", "", 1).WPFObject("ContentControlEx", "", 1).WPFObject("ComboBoxEdit", "", 1)  
+     objTemp.SetText("Final")
+   
+     'Click on Add Button
+     strTemp = "WPFObject(""ContentControlEx"", ""Add"", 2)"
+     Set objTemp =Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True) 
+     If objTemp.Enabled then
+        objTemp.Click
+        Delay 3000 ,"Please Wait..."
+     End If
+     
+     strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")" 
+     Set objGrid  = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)     
+     NewDescText = objGrid.DataContext.SourceCollection.Item(cnt-1).Timepoint
+  
+  
+         'Verify the Timepoint
+     Call sSchdeuleCleanup() 
+     If Cstr(NewDescText) = Cstr(DescText)Then 
+         strTCRemarks = "The Next timepoint: '" & DescText & "' for the Series ID :' " &strSeriesID& "' of the latest in STP is displayed "
+         strTestCaseResult = "PASS"      
+     Else
+         strTCRemarks = "The Next timepoint of the latest in STP for series id :'" &strSeriesID&"'  not displayed , the displyed Time point is : '" & DescText
+         strTestCaseResult = "FAIL"  
+     End If 
+  
+ If Err.Number > 0 Then
+    Log.Warning("Error in 'sAddTimePoint', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+ End If
+ 
+End Sub  
+
+
+'--------------------------------------------------------------------------------------------------------------------------------------------------------------
+'*********************************************************************************************************************
+
+Sub sSeries_Search_Delay()
+
+  On Error Resume Next
+  Dim objEdgeWait,strTemp,objTemp
+  Delay 120000, "Please wait Searching Series ID"
+  Set objCell =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WaitChild("WPFObject(""InplaceBaseEdit"", """", 1)",3000000)
+  strTemp = "WPFObject(""GridControl"")"
+  Set objTemp=  Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)  
+  Call objTemp.ClickCell(0, "Series Id")    
+  Do until objTemp.get_CurrentCellValue <> ""      
+      Delay 1000,"Pls Wait... Form is loading..." 
+      Set objCell =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WaitChild("WPFObject(""InplaceBaseEdit"", """", 1)",60000)
+      if objCell.Exists Then 
+        Call objTemp.ClickCell(0, "Series Id") 
+        Exit Do
+      End If
+  Loop     
+End Sub
+'*********************************************************************************************************************
+
+'Function to obtian the latest timepoin for STP
+
+Sub sVerifyTimepointDate(strParameters, strSeriesID)
+'Sub sVerifyTimepointDate()
+On Error Resume Next
+
+    
+  
+
+  Dim strSeriesName,strSourceSeriesName,strSeriesSourceCode,strSeriesStatus,strSeriesType,STPSheetName
+  Dim strSeriousCountry,strOutputUnit,strSeriesNature,strSeriesFreq,strSourceUnit,strUnitType,strTestDataFile
+  Dim strAliasName,strFileName,STP,strTimepoints,strText,strStartcolumn
+  Dim i,FilePath,intcount,intj, intCol
+  Dim objArray,oSTP_ExcelObj,objSTPXls,objActiveWB,netUIHWND,wndEXCEL7
+  Dim intlastRow,lastColumn,inti,strTemp,objErrmsg,objOkClick,File, LastRow
+
+  
+  Const xlFillDefault = 0
+  strStartcolumn=0
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")
+  strTimePoint = getSplitValue(strParameters,"TimePoint")
+  strCategory = getSplitValue(strParameters,"Category")
+'  strSeriesID = getSplitValue(strParameters,"SeriesID")
+  strForecast = getSplitValue(strParameters,"Forecast")
+  strRevised =  getSplitValue(strParameters,"Revised")
+  'msgbox DescText
+  
+   
+'''  'STP= getSplitValue(str
+'  strSeriesID = "368765647"
+'  strTestDataFile = "YYY-Shilpa_STP-File 2 7-19-2015"
+'  STPSheetName = "A1_1"
+'  strRequiredTCName = "TC_SS_PRT07"
+'  DescText = "12/1/2018"
+'  strTimePoint = 15
+
+  
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_RS_PRT13"))Or Ucase(Trim(strRevised)) = "YES" Then
+      Delay 20000 , "Please Wait form is loading"
+      strCategory = getSplitValue(strParameters,"Category1")
+      DescText = strTimepointDetails 
+  Else
+      Delay 5000 , "Please Wait form is loading"
+   End If
+   
+   'Get the File Loacation 
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+   
+  Delay(2000)
+  
+   Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    'msgbox STPSheetName
+      Delay 200
+    End With
+
+    With .WorkSheets(STPSheetName)
+      lastColumn=.UsedRange.Columns.Count
+      LastRow = .UsedRange.Rows.Count
+      
+      If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_SS_PRT18"))Then 
+        'Set NetUIHWND = Aliases.EXCEL.wndXLMAIN.EXCEL2.Ribbon.Ribbon.NUIPane.NetUIHWND 
+         For intI = 3 to lastColumn
+            strText=.Cells(2,intI) 
+            If isDate(strText) Then
+                If  DateDiff("d",Date,strText)< 0 Then 
+                   Call sClickAddDate(strTestDataFile)   
+                    Delay 5000, "Please Wait" 
+                    Exit For 
+                End If                  
+            End If            
+       Next
+       Delay 2000
+      For intI = 3 to lastColumn      
+         strText=.Cells(2,intI)  
+         If isDate(strText) And Cstr(strText) = Cstr(Date)  then
+            IntColumnNumber = intI         
+            Exit For 
+         End If
+     Next
+       For intI = 1 to LastRow
+         strText=.Cells(intI,1) 
+         If Cstr(strText) = Cstr(strSeriesID) Then          
+            IntRowNumber = intI       
+           Exit For 
+          End If
+       Next  
+       .Cells(IntRowNumber,IntColumnNumber).Value=strTimePoint
+       .Cells(IntRowNumber,IntColumnNumber).Select
+        'Click on Mark Good:
+        'Call netUIHWND.Click(55, 93)   
+        Call sClicKMarkGood(2,strTestDataFile)
+          
+       'Upload STP        
+       Call sUploadSTP(strTestDataFile) 
+       Exit Sub
+         
+    End If
+      
+    
+      For intI = 3 to lastColumn
+        strText=.Cells(2,intI)       
+         If isDate(strText) And Cstr(strText) = Cstr(DescText)  then
+          'msgbox strText
+          IntColumnNumber = intI         
+          Exit For 
+         End If
+       Next 
+      For intI = 1 to LastRow
+        strText=.Cells(intI,1) 
+        If Cstr(strText) = Cstr(strSeriesID) Then          
+          IntRowNumber = intI       
+          Exit For 
+        End If
+      Next  
+      
+        CurrentTimpoint = .Cells(IntRowNumber,IntColumnNumber).Value      
+      If Ucase(Trim(strCategory))=Ucase(Trim("Upload"))Then 
+          .Cells(IntRowNumber,IntColumnNumber).Value = strTimePoint 
+          .Cells(IntRowNumber,IntColumnNumber).Select      
+          If  Trim(Ucase(strRevised)) =  "YES" then
+'              .Cells(IntRowNumber,IntColumnNumber).Value = CurrentTimpoint + strTimePoint
+              .Cells(IntRowNumber,IntColumnNumber).Select              
+                Call sClickTimePointDetails(2,strTestDataFile)
+
+
+'                Dim excel
+'                Dim tableLayoutPanel
+'                Dim radGridView
+'                Set excel = Aliases.EXCEL
+'                Call excel.wndXLMAIN.EXCEL2.Ribbon.Ribbon.NUIPane.NetUIHWND.Click(637, 68)
+'                Set tableLayoutPanel = excel.TPDetailsForm.mainPanel
+'                Set radGridView = tableLayoutPanel.gridView
+'                Call radGridView.ClickCell(0, "Timepoint Type")
+'                Call radGridView.Click(283, 66)
+'                Call excel.DropDownPopupForm.Click(42, 78)
+'                Call radGridView.ClickColumnHeader("Timepoint Type")
+'                tableLayoutPanel.buttonPanel.saveButton.ClickButton
+            
+        End If
+          
+          If strForecast = "Yes"  Then 
+               .Cells(IntRowNumber,IntColumnNumber).Select  
+                Call sClickTimePointDetails(2,strTestDataFile)
+          End IF
+          
+           'DescText= .Cells(2,IntColumnNumber)           
+           Call sUploadSTP(strTestDataFile) 
+                      
+           Exit Sub  
+      End If
+    
+      For intJ= IntRowNumber to  lastColumn-1
+        strValue = .Cells(IntRowNumber,IntColumnNumber)
+         IF  strValue <> "" Then               
+            strDate = .Cells(2,IntColumnNumber)             
+            DescText = DateAdd("yyyy",1,strDate)
+           Exit For          
+        End If
+        IntColumnNumber = IntColumnNumber+1
+      Next
+    End With 
+   End With  
+   
+  'Close STP File
+    Call ExcelProcessKill() 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sVerifyTimepointDate', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+'*******************************************************************************************************************************************
+Sub sSchdeuleCleanup()
+On Error Resume Next
+
+  Call sCloseWithYes(637)
+  Delay 1000
+  Call sCloseWithYes(1299)
+  Delay 1000  
+  Call sSourceScheduleDrop()
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sSchdeuleCleanup', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+'***************************************************************************************************************************************
+Sub sCloseWithYes(X)
+On Error Resume Next
+
+  strEnvi = "Edge ( US Integration )" 
+  Set objStrClose=   Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1)
+  Call objStrClose.Click(X, 16)
+
+  Delay 500, "Form is Closing..." 
+ 
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Edge").WPFObject("CustomMessageBoxWindow", "Edge", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent")
+   Set objYes = objTemp.WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_Yes")
+    If objYes.Exists Then 
+      objYes.Click
+    End If
+    
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sCloseWithYes', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Sub
+
+'*************************************************************************************************************************************
+Sub sClosePanel2withYes(X)
+  On Error Resume Next
+  
+  'strEnvi = "Edge ( US Integration )" 
+  
+  Set objStrClose = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2)
+  Call objStrClose.Click(X, 16)
+  
+  Delay 500, "Form is Closing..." 
+ 
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Edge").WPFObject("CustomMessageBoxWindow", "Edge", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent")
+   Set objYes = objTemp.WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_Yes")
+    If objYes.Exists Then 
+      objYes.Click
+    End If
+    
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sClosePanel2withYes', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+    
+End Sub
+'**************************************************************************************************************************************************************
+
+''Testcase:TC_SS_PRT04: Delete the 
+Sub sDeleteSchdeule(strParameters)
+
+On Error Resume Next 
+
+  Dim intRow,strTemp,objTemp,Grid,intI,strTimepoint
+  Dim objEdge,objCaption,i,objText,j,strWrkSpaceName,strDesc1,strDesc2
+  
+  Call sOpenSelectedSS(strParameters)
+    
+  'Select the Schedule
+  
+   'Verify the Timepoint
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl").WPFObject("SourceSeriesScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1)
+   strTimepoint = objTemp.DataContext.Row.Timepoint    
+   DescText = strTimepoint
+   objTemp.Click
+   
+   'Delet the selected schedule
+   strTemp ="WPFObject(""ContentControlEx"", ""Delete"", 2)"  
+   Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   If objTemp.Enabled Then 
+     objTemp.Click 
+     Delay 1000 
+   End If 
+  
+   'Click yes on  Confirmation window
+   strTemp ="WPFObject(""Button_Yes"")" 
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name", strTemp, 50, True)
+   objTemp.Click
+   Delay 200
+   
+   'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor()  
+    
+    'Verification : Opent he same Source schedule to verify the delete action
+    
+    Call sOpenSelectedSS(strParameters)
+    
+    'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl")
+    strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+    Set objTemp= Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    intRowCnt  = objTemp.VisibleRowCount
+    
+    For IntI= 0 to intRowCnt-1
+      Set objTimepoint = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl").WPFObject("SourceSeriesScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1)
+      strTimepoint = objTimepoint.DataContext.Row.Timepoint  
+      If   strTimepoint = DescText Then   
+       blnFlag = True  
+       Exit For   
+      End If   
+     Next 
+     
+     If blnFlag = False Then
+      strTCRemarks =  "The Schedule '"& DescText &"' is deleted successfully. " 
+      strTestCaseResult = "PASS" 
+     Else 
+      strTCRemarks = "The Schedule '"& DescText &"' is not deleted successfully. "
+      strTestCaseResult = "FAIL"     
+    End If
+    
+    'SourceSchdeulClean Up
+    Call sCloseSWV() 
+    Call sSourceScheduleDrop
+    
+    'Clear the memory 
+    Set objTemp = Nothing 
+    Set objTimepoint = Nothing 
+        
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDeleteSchdeule', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+
+'**************************************************************************************************************************************************************
+
+''Testcase:TC_SS_PRT05: Verify 'Fill'Button on SourceSchedule Module
+Sub sFillinSeries(strParameters)
+
+On Error Resume Next 
+
+  Dim intRow,strTemp,objTemp,IntJ,intI,strTimepoint, intRowCount, intCount
+  
+  
+  intCount =0 
+  
+  Call sOpenSelectedSS(strParameters)
+  strFillCount=getSplitValue(strParameters,"FillCount")
+  
+  'Set the Schedule type to Final 
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("BarManager", "", 1).WPFObject("BarContainerControl", "", 1).WPFObject("BarControl", "", 1).WPFObject("BarItemLinkInfo", "", 7).WPFObject("BarEditItemLinkControl", "", 1).WPFObject("ContentControlEx", "", 1).WPFObject("ComboBoxEdit", "", 1)  
+   objTemp.SetText("Final")
+   
+   strTemp = "WPFObject(""SpinEdit"", """", 1)"
+   Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   objTemp.setText(strFillCount)
+   
+   'Click on Add button
+   strTemp = "WPFObject(""ContentControlEx"", ""Add"", 2)"
+   Set  objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   If objTemp.Enabled Then 
+      objTemp.Click 
+      Delay 2000 
+   End If 
+   
+   'Enter Estimates Start Time and End Time  
+   strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")" 
+   Set objGrid  = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   'intRowCount = 
+      
+   For IntI = 1 to objGrid.VisibleRowCount
+     Set objRow = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl").WPFObject("SourceSeriesScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", IntI).WPFObject("CellsControl", "", 1)
+     Set sEstimatedStartDate = objRow.WPFObject("LightweightCellEditor", "", 3).WPFObject("InplaceBaseEdit", "", 1)
+     Set sEstimatedEndDate = objRow.WPFObject("LightweightCellEditor", "", 4).WPFObject("InplaceBaseEdit", "", 1)
+  
+     If objRow.DataContext.Row.SsDateTo = "" Then      
+        sEstimatedStartDate.Click
+        sys.Keys DatePart("m",aqDateTime.Now )
+        sEstimatedEndDate.Click
+        sys.Keys DatePart("m",aqDateTime.Now )
+        Delay 200      
+        Exit For
+    End If
+   Next   
+     
+  'Click on fill Button 
+   strTemp = "WPFObject(""ContentControlEx"", ""Fill"", 2)"
+   Set  objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   If objTemp.Enabled Then 
+      objTemp.Click 
+      Delay 500 
+   End if 
+   
+   'Verify TimepointDate , Estimates Start and End time for all added Schedules
+   Set objRow = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl").WPFObject("SourceSeriesScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", IntI)
+   strTimepoint = objRow.DataContext.Row.Timepoint 
+   For IntJ = IntI to objGrid.VisibleRowCount
+      Set objRow = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl").WPFObject("SourceSeriesScheduleTableView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", IntJ)
+      strCurrentTPDate = objRow.DataContext.Row.Timepoint 
+      strStartDate = objRow.DataContext.Row.SsDateTo 
+      strStartDate = objRow.DataContext.Row.SsDateFrom       
+      If Cstr(strCurrentTPDate) = Cstr(strTimepoint) And strStartDate <>""  And strStartDate <> "" Then 
+        intCount = intCount+1
+        strTimepoint= DateAdd("yyyy",1,strTimepoint) 
+      End If   
+   Next
+   
+   If intCount = Cint(strFillCount) then 
+     strTCRemarks =  "The Fill button is working as Expected" 
+     strTestCaseResult = "PASS" 
+   Else
+      strTCRemarks =  "The Fill button is not working as Expected" 
+     strTestCaseResult = "Fail"
+   End If
+   
+   'Scedule Clean Up   
+   Call sCloseWithYes(1299)
+   Delay 200 
+   Call sSourceScheduleDrop()
+   
+  'Clear the memory space 
+  Set objTemp = Nothing 
+  Set objRow = Nothing
+  Set objGrid = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sFillinSeries', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+'**************************************************************************************************************************************************************
+
+''Testcase:TC_SS_PRT06:Modify Release Status to Released manually and upload and Verify the Released status and Actual Release Time should be updated accordingly.
+
+Sub sReleaseStatusManual(strParameters)
+On Error Resume Next 
+
+   Dim strSSchdeule, intRowCount, strTemp , IntI , strCurrentSSchedule
+   Dim objTemp
+   
+   'Open the Required Source Schedule   
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please Wait..."
+   
+  strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   
+   'Identify  Series schedule which have Release Status "Pending"
+   For IntI = 0 to objTemp.VisibleRowCount-1 
+      strSSchdeule  = objTemp.DataContext.SourceCollection.Item(IntI).get_ScheduleStatusId
+      If Cint(strSSchdeule) = 1 Then 
+        objTemp.DataContext.SourceCollection.Item(IntI).set_ScheduleStatusId(3)
+        DescText =objTemp.DataContext.SourceCollection.Item(IntI).Timepoint
+        delay 200
+        strCurrentSSchedule = objTemp.DataContext.SourceCollection.Item(IntI).get_ScheduleStatusId
+        Exit For
+      End If
+   Next  
+   
+   'Upload the Workspace
+  Call fUploadWorkSpace()
+  Call sEdgeProcessor()
+  
+  
+  'Verify the Release Status
+  Call sOpenSelectedSS(strParameters)
+  
+  strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   
+   'Identify  Series schedule which have Release Status "Pending"
+   For IntI = 0 to objTemp.VisibleRowCount-1 
+    strSSchdeule  = objTemp.DataContext.SourceCollection.Item(IntI).get_ScheduleStatusId
+    strTimepoint = objTemp.DataContext.SourceCollection.Item(IntI).Timepoint
+    strActualDate = objTemp.DataContext.SourceCollection.Item(IntI).SsDateActual
+    If Cstr(strTimepoint) = Cstr(DescText) And Cint(strSSchdeule) = Cint(strCurrentSSchedule) And strActualDate <> "" Then
+      strTCRemarks =  "Schedule status is  updated to 'Released'  and  Actual  Release Time is Filled" 
+      strTestCaseResult = "PASS"  
+      Exit For     
+    Else
+      strTCRemarks =  "Schedule status is  not updated to 'Released'  and  Actual  Release Time is not Filled" 
+      strTestCaseResult = "FAIL" 
+    End If    
+   Next
+   
+   'SourceSchedule Clean Up
+   Call sCloseSWV()
+   Call sSourceScheduleDrop()
+   
+   'Free up the memory 
+   Set ObjTemp = Nothing
+   
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sReleaseStatusManual', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+
+'------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Function fGetSeriesIDRow(strSeriesID)
+'Function fGetSeriesIDRow()
+  On Error Resume Next 
+  Dim IntI, objTemp , strCurrentSeriesID
+'  strSeriesID = "388474927"
+'  strEnvi = "Edge ( US Integration )" 
+    
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesGridControl")
+  For IntI = 0 to objTemp.VisibleRowCount-1
+    strCurrentSeriesID = objTemp.DataContext.Item(IntI).SeriesId
+    If Cstr(strCurrentSeriesID) = strSeriesID then 
+      Exit For
+    End If
+  Next
+  fGetSeriesIDRow = IntI
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fGetSeriesIDRow', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Function
+
+
+'------------------------------------------------------------------------------------------------------------------------------------------------------------------
+''Testcase:TC_SS_PRT07:Modify Release Status to Released by Automatatic and upload and Verify the Released status and Actual Release Time should be updated accordingly.
+
+Sub sReleaseStatusAuto(strParameters)
+'Sub sReleaseStatusAuto()
+On Error Resume Next 
+
+   Dim strSSchdeule, strSeriesID, intRowCnt, strTemp , IntI , strCurrentSSchedule
+   Dim objTemp 
+   
+   strSeriesID = getSplitValue(strParameters,"SeriesID")   
+   
+   'Open the SourceSchedule and Add Timpoint Upload the Source Schedule   
+   Call sAddSchedule(strParameters)
+   
+   'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor()
+      
+'   ' Open Source Disply View Module
+    Call sOpenSourceDispalyViewer()
+    Call sGridSelection_SourceModule(strParameters)
+        
+    'Click on Open Global STP Button
+    Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("BarManager", "", 1).WPFObject("BarContainerControl", "", 1).WPFObject("BarControl", "", 1).WPFObject("BarItemLinkInfo", "", 6).WPFObject("BarButtonItemLinkControl", "", 1).WPFObject("ContentControlEx", "Open Global STP", 2)
+    If objTemp.Exists Then
+      objTemp.Click
+      Call sExcelFullHistory()
+      Call sVerifyTimepointDate(strParameters, strSeriesID)
+   End If  
+   
+   'Verify the Relaes Status in SourceSchdeule Window
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please wait"
+   
+   strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+   Set objSourceGrid =Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   
+   For IntI = 0 to  objSourceGrid.VisibleRowCount-1 
+      strTimepoint = objSourceGrid.DataContext.SourceCollection.Item(IntI).Timepoint 
+      strRStatus = objSourceGrid.DataContext.SourceCollection.Item(IntI).ScheduleStatusId
+      If Cstr(strTimepoint) = Cstr(DescText)And  Cint(strRStatus) = 3 Then
+         strTCRemarks =  "Schedule status is  updated to 'Released' for : '" & DescText & "' TimePoint"
+         strTestCaseResult = "PASS"
+         Exit For
+      Else
+         strTCRemarks =  "Schedule status is  not  to 'Released'   for : '" & DescText& "' TimePoint"
+         strTestCaseResult = "FAIL"           
+      End If
+   Next
+   
+   'SourceSchedule Clean Up
+    Call sCloseSWV() 
+    Call sSourceScheduleDrop()
+   
+   'Free up the memory 
+   Set ObjTemp = Nothing
+   Set objSourceGrid = Nothing 
+   
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sReleaseStatusAuto', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If       
+End Sub
+
+'****************************************************************************************************************************************************************
+ 
+'Upload the STP
+
+Sub sUploadSTP(strTestDataFile)
+'Sub sUploadSTP()
+
+On Error Resume Next
+
+Dim netUIHWND , File  
+  
+         Delay 2000    
+'        strTestDataFile = "YYY-YYY-TABLE NAME TEST"
+'        strTestCase_no = "TC_RS_PRT13"
+
+        'Set netUIHWND =  Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+               
+        'Click on Mark Good 
+          ' Call netUIHWND.Click(55, 93)
+          Call  sClicKMarkGood(2,strTestDataFile)  
+                  
+          'Click on Uoload 
+          'Call netUIHWND.Click(136, 73) 
+          Call sClickUpload(2,strTestDataFile) 
+
+          If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_RS_PRT13"))Then 
+                       
+            Set objTemp= Sys.Process("EXCEL", 2).WPFObject("HwndSource: CustomMessageBoxWindow", "Warning").WPFObject("CustomMessageBoxWindow", "Warning", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_No") 
+            If objTemp.Exists Then
+              objTemp.click
+              Delay 5000
+            End if 
+            
+          End If
+          
+                        
+          'Click on Information Dialog
+          Call sClickonInformation(2,"Yes")
+          Delay 5000     
+          If  Ucase(Trim(strTestCase_no)) <> Ucase(Trim("TC_SS_PRT17")) AND _
+          Ucase(Trim(strTestCase_no)) <> Ucase(Trim("TC_SS_PRT18"))  Then 
+               Set objTemp = Sys.Process("EXCEL", 2).Window("NUIDialog", "Microsoft Excel", 1).Window("NetUIHWND", "", 1).MSAAObject("btn_Save")
+              If objTemp.Exists Then 
+                 Call objTemp.Click
+               End If
+          End If
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sUploadSTP', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If                  
+End Sub 
+'******************************************************************************************************************************************************************************************
+
+Function sAddSceduleRow()
+On Error Resume Next
+
+  Dim objTemp , strTemp   
+  'Set the Schedule type to Final 
+     Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("BarManager", "", 1).WPFObject("BarContainerControl", "", 1).WPFObject("BarControl", "", 1).WPFObject("BarItemLinkInfo", "", 7).WPFObject("BarEditItemLinkControl", "", 1).WPFObject("ContentControlEx", "", 1).WPFObject("ComboBoxEdit", "", 1)  
+     objTemp.SetText("Final")
+     
+     'Click on Add Button
+     strTemp = "WPFObject(""ContentControlEx"", ""Add"", 2)"
+     Set objTemp =Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True) 
+     If objTemp.Enabled then
+        objTemp.Click
+        Delay 3000 ,"Please Wait..."
+     End If
+    
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sAddSceduleRow', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+     
+End Function
+'*************************************************************************************************************************************************************************************
+
+Function sSeriesSearch(strSeriesID)
+'Function sSeriesSearch()
+
+On Error Resume Next
+Dim strTemp, objTemp, objPrimarySource
+
+'  strSeriesID = "368765647"
+'  strEnvi = "Edge ( US Integration )" 
+  'Click on Series Serach Button to select the required Series Id
+   strTemp = "WPFObject(""ContentControl"", ""Series"", 1)"
+   Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+
+   If objTemp.Enabled Then 
+     objTemp.Click
+     strTemp  = "WPFObject(""ContentControlEx"", ""Search on Source Tree"", 2)"
+     Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+     objTemp.Click
+     Call sEdgeProcessor()    
+   End If
+  
+  'Enter the required Series Id in Source Series  dialog:
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("PART_FilterRow").WPFObject("ContentPresenter", "", 1).WPFObject("FilterCellContentPresenter", "", 1).WPFObject("TextEdit", "", 1)
+   If objTemp.Exists Then 
+    objTemp.Click
+    sys.Keys(strSeriesID)
+    Sys.Keys("[Enter]")    
+    Call sSeries_Search_Delay_layout2()
+    Delay 2000 
+   End if
+   
+ 'Select the Dispalied Row and open Global STP
+    'Clickon Open Global STP button   
+    strTemp = "WPFObject(""ContentControlEx"", ""Open Global STP"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    If objTemp.IsEnabled then 
+      objTemp.Click
+    End If
+ 
+   Delay 5000,"Opening STP.. Pls wait.."
+   Call sExcelFullHistory() 
+   
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sSeriesSearch', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Function
+'*********************************************************************************************************************************************************************************************************************
+''Testcase:TC_SS_PRT08: Modify Timepoint Latency and Released TimePoint Upload workspace and Verify
+
+Sub sDailySettings(strParameters)
+'Sub sDailySettings()
+
+  On Error Resume Next  
+  Dim strTemp, objTemp, strSeriesID, intRowCnt
+  
+   strSeriesID = getSplitValue(strParameters,"SeriesID")
+   strLatency = getSplitValue(strParameters,"Latency")
+   
+   
+  'Open the Source Schedule   
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please wait"
+   
+   
+   'Click on required Series Id
+    Call sFindSeriesID(strSeriesID)
+   
+   
+   'Modify Timepoint Latency and Released TimePoint   
+   Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1)
+   'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1).WPFObject("DateEdit", "", 1).Keys("12/10/2018")
+   objGrid.WPFObject("DateEdit", "", 1).set_DateTime(Date)
+   objGrid.WPFObject("DateEdit", "", 2).set_DateTime(Date)
+   objGrid.WPFObject("TextBox", "", 1).set_Text(strLatency)
+   
+   Delay 2000
+
+    'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor()
+       
+   'Open the Source Schedule   
+    Call sOpenSelectedSS(strParameters)
+    Delay 2000 , "Please wait"
+
+    Call sFindSeriesID(strSeriesID)
+    
+    Set objGrid =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1)
+    strTimepoint = objGrid.WPFObject("DateEdit", "", 1).get_DateTime
+    strReleased= objGrid.WPFObject("DateEdit", "", 2).get_DateTime    
+    strCurrentLatency = objGrid.WPFObject("TextBox", "", 1).get_Text
+    
+    If strTimepoint = Date And strCurrentLatency = strLatency And strReleased = Date Then
+         strTCRemarks = "Daily settings for the selected series is updated"
+         strTestCaseResult = "PASS"        
+      Else
+         strTCRemarks = "Daily settings for the selected series is not updated"
+         strTestCaseResult = "FAIL"
+    End IF
+    
+    Set objGrid = Nothing 
+    
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDailySettings', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Sub
+
+'*********************************************************************************************************************************************************************
+
+Sub sWaitPrimarySource()
+
+On Error Resume Next
+
+  Dim objEdgeWait,strTemp,objTemp
+  
+ 'strEnvi = "Edge ( US Integration )" 
+  
+  Set objEdgeWait= Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 2).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WPFObject("InplaceBaseEdit", "", 1)
+    Do until objEdgeWait.DisplayText = "Primary Source"     
+         Delay 1000,"Pls Wait... Form is loading..."    
+  Loop  
+
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sWaitPrimarySource', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Sub
+
+'*****************************************************************************************************************************************************************
+
+Sub sFindSeriesID(strSeriesID)
+'Sub sFindSeriesID()
+  
+  On Error Resume Next
+  Dim strTemp, objTemp 
+
+'  strSeriesID = 388474927
+'   strEnvi = "Edge ( US Integration )"
+'   strSeriesID="388474927"
+
+   SYS.Keys("^f")
+   Delay 2000
+   Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesGridControl")
+   objGrid.WPFObject("TableView", "", 1).set_SearchString(strSeriesID)
+   SYS.Keys("[Enter]")
+   Delay 5000
+   Call Aliases.EdgeClient.HwndSource_Shell.Shell.Grid.ContentControl.Grid.PART_RibbonLayout.Part_WindowContent.Grid.ContentControl.PART_ContainerContent.BarManager.DockPanel.DockLayoutManager.LayoutGroup.LayoutPanel.LayoutPanelContentPresenter.Root.AdornerDecorator.AdornedControl.Grid.Grid.Grid.SourceSeriesGridControl.TableView.WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).Click
+
+   'Call objGrid.ClickCell(0, "Series ID")
+   
+   Set objGrid = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sFindSeriesID', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+
+'************************************************************************************************************************************************************************
+
+''Testcase:TC_SS_PRT08: Modify Timepoint Latency and Released TimePoint Upload workspace and Verify
+
+Sub sDailySettingsCopyPaste(strParameters)
+'Sub sDailySettingsCopyPaste()
+On Error Resume Next
+
+Dim strTemp, objTemp, objGrid, strTimepoint, strReleased, strLatency, strLatestTimepoint, strLatestReleased ,strLatestLatency
+
+    strSeriesID = getSplitValue(strParameters,"SeriesID")
+
+    Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1)
+    strTimepoint = objGrid.WPFObject("DateEdit", "", 1).get_DateTime
+    strReleased= objGrid.WPFObject("DateEdit", "", 2).get_DateTime    
+    strLatency = objGrid.WPFObject("TextBox", "", 1).get_Text
+    
+    strTemp = "WPFObject(""ContentControlEx"", ""Copy Schedules"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+ 'Copy setting from Daily Sereis 
+  If objTemp.Exists  Then 
+      objTemp.Click
+      strTemp = "WPFObject(""ContentControlEx"", ""Copy Settings from Daily Series"", 2)"
+      Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+      If objTemp.IsEnabled Then 
+        objTemp.Click
+      End If  
+  End If
+  
+  'Select the Requried Seires ID
+  
+  Call sFindSeriesID(strSeriesID)
+  
+  'Paste setting into selected Daily Series
+  strTemp = "WPFObject(""ContentControlEx"", ""Paste Schedules"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  If objTemp.IsEnabled Then 
+       objTemp.Click
+       strTemp = "WPFObject(""ContentControlEx"", ""Paste Settings Into Selected Daily Series"", 2)"
+       Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+       If objTemp.IsEnabled Then 
+        objTemp.Click
+        Delay 200
+        strTemp = "WPFObject(""Button"", ""Confirm"", 1)"
+        Set objConfirm = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name", strTemp, 50, True)
+        objConfirm.Click
+      End If 
+   End If 
+   Delay 2000
+   
+   strLatestTimepoint = objGrid.WPFObject("DateEdit", "", 1).get_DateTime
+   strLatestReleased= objGrid.WPFObject("DateEdit", "", 2).get_DateTime    
+   strLatestLatency = objGrid.WPFObject("TextBox", "", 1).get_Text
+   
+   
+   'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor()
+    
+   'Open the Source Schedule   
+    Call sOpenSelectedSS(strParameters)
+    Delay 2000 , "Please wait"
+
+    Call sFindSeriesID(strSeriesID)
+    
+    Set objGrid =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1)
+    strTimepoint = objGrid.WPFObject("DateEdit", "", 1).get_DateTime
+    strReleased= objGrid.WPFObject("DateEdit", "", 2).get_DateTime    
+    strCurrentLatency = objGrid.WPFObject("TextBox", "", 1).get_Text
+     
+  If strTimepoint = strLatestTimepoint And strReleased = strLatestReleased And strCurrentLatency= strLatestLatency Then
+     strTCRemarks = "Daily settings is copied and Pasted for selected Series"
+     strTestCaseResult = "PASS"      
+  Else
+     strTCRemarks = "Daily settings is not copied and Pasted for selected Series"
+     strTestCaseResult = "FAIL"      
+  End If
+  
+
+  'Clean Up   
+  Call  sCloseSWV()
+  Delay 2000
+  Call sSourceScheduleDrop()
+  
+  Set objTemp = Nothing
+  Set objConfirm = Nothing 
+  Set objGrid = Nothing  
+   
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDailySettingsCopyPaste', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+    
+End Sub
+'***********************************************************************************************************************************************************************8
+'Testcase:TC_SS_PRT10_12: Veirfy Modified Schedule Release Date and status is appered after upload the workspace.
+Sub sFindAndReplaceSeries(strParameters)
+'Sub sFindAndReplaceSeries()
+
+ On Error Resume Next  
+ Dim strTemp, objTemp, strSeriesID, intRowCnt
+  
+   strSeriesID = getSplitValue(strParameters,"SeriesID")  
+   strWindow =   getSplitValue(strParameters,"Window")   
+   sKeyWord = "Replace"
+   
+   
+   'strTimpoint = getSplitValue(strParameters,"Timepoint")
+   'strFirstButton = getSplitValue(strParameters,"FirstButton")
+   'strSecondButton = getSplitValue(strParameters,"SecondButton")
+   'strReplaceButton = getSplitValue(strParameters,"ReplaceButton")
+  ' strSelectButton = getSplitValue(strParameters,"SelectButton")
+  ' strCategory =  getSplitValue(strParameters,"Category")
+
+   
+   'strCategory = "ReplaceSeries" 
+   'strSeriesID = "369145097"
+   
+  'Open the Source Schedule   
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please wait..."
+  
+   'Search the required Series ID 
+         Call sFindSeriesID(strSeriesID)
+      
+   'Get the Run time Timpoint and Estimated ReleaseStartDate,  EndDate and  Actual Release Time   
+   strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+   Set objSourceGrid =Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)   
+     
+   'strFirstButton = "WPFObject(""ContentControlEx"", ""Find And Replace Schedules"", 2)"
+   'strSecondButton= "WPFObject(""ContentControlEx"", ""Find And Replace Schedules In Series"", 2)"
+   'strSecondButton = "WPFObject(""ContentControlEx"", ""Find And Replace Schedule In Folder"", 2)"
+   
+  
+   'Click on Find And Replace Schedule In Folder/Series  
+      strTimepoint = objSourceGrid.DataContext.SourceCollection.Item(0).Timepoint 
+      strStartDate = objSourceGrid.DataContext.SourceCollection.Item(0).SsDateTo
+      strModifiedDate = DateAdd("d",5,strStartDate)
+      strTemp = "WPFObject(""ContentControlEx"", ""Find And Replace Schedules"", 2)"
+      Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+      objTemp.Click 
+      strTemp = "WPFObject(""ContentControlEx"", ""Find And Replace Schedules In Series"", 2)"   
+      Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+      objTemp.Click
+      Delay 2000
+    
+      'Enter the TimepointDate on Source Series Schedule Replace Window:
+      strTemp = "WPFObject(""DateEdit"", "", 1)"
+      Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 1).WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 1).FindChild("Name", strTemp, 50, True)
+      objTemp.set_Text(strTimepoint)
+      strTemp = "WPFObject(""Button"", ""Find"", 1)"
+      Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name", strTemp, 50, True)
+      objTemp.Click
+      Delay 2000
+   
+      'Enter the Replace Criteria:
+      Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 2)
+      objTemp.WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 1).WPFObject("DateEdit", "", 1).set_Text(strModifiedDate)
+      objTemp.WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 2).WPFObject("DateEdit", "", 1).set_Text(strModifiedDate)
+      objTemp.WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 3).WPFObject("ComboBox", "", 1).set_Text("Released")
+    
+    
+      'Select the Scedule to replace 
+      'Search the required Series ID 
+       Set objSelectGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 3).WPFObject("Grid", "", 1).WPFObject("FindAndReplaceScheduleGridControl")
+       Call objSelectGrid.ClickCell(0, 0)
+  
+   
+    
+      'Click on Replace Selected Button
+     strTemp  = "WPFObject(""Button"", ""Replace Selected"", 4)"
+     Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+     objTemp.Click
+     Delay 200 
+     Call sConfirm(strWindow , sKeyWord )
+   
+     'Verify the Modification is applied or not 
+     strCuttentStartDate = objSourceGrid.DataContext.SourceCollection.Item(0).SsDateTo
+     strActualTime = objSourceGrid.DataContext.SourceCollection.Item(0).SsDateActual
+   
+     If Cstr(strModifiedDate) = Castr(strCuttentStartDate) And strActualTime <> "" Then 
+         strTCRemarks =  "Release status is updated and Actual Released time is filled " 
+         'strTestCaseResult="PASS" 
+     Else
+         strTCRemarks =  "Release status is not updated or Actual Released time is not filled " 
+         'strTestCaseResult="FAIL" 
+     End If
+   
+     'Upload the Workspace
+      Call fUploadWorkSpace()
+      Call sEdgeProcessor() 
+    
+     'Open the Source Schedule   
+     Call sOpenSelectedSS(strParameters)
+     Delay 2000 , "Please wait..."
+   
+  '   'Search the required Series ID 
+  '   If Ucase(Trim(strRequiredTCName))=Ucase(Trim("TC_SS_PRT10_12"))Then   
+         Call sFindSeriesID(strSeriesID)
+  '   End If
+   
+     'Get the Run time Timpoint and Estimated ReleaseStartDate,  EndDate and  Actual Release Time   
+     strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+     Set objSourceGrid =Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)   
+   
+      strStartDate = objSourceGrid.DataContext.SourceCollection.Item(0).SsDateTo
+      strReleaseStatus = objSourceGrid.DataContext.SourceCollection.Item(0).ScheduleStatusId
+      strDate = Split(strStartDate," ")
+      strDate1 = Split(strModifiedDate ," ")
+    
+      If Cstr(strDate(0))= Cstr(strDate1(0))And Cint(strReleaseStatus) = 3 Then
+        strTCRemarks = strTCRemarks & "<br />" & "The schedule is updated correctly" 
+        strTestCaseResult="PASS" 
+      Else
+        strTCRemarks = strTCRemarks & "<br />" & "The schedule is not updated correctly" 
+        strTestCaseResult="FAIL"      
+      End If
+     
+   Call sCloseSWV()
+   Delay 1000  
+   Call sSourceScheduleDrop()
+  
+  Set objTemp = Nothing 
+  Set objSourceGrid = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sFindAndReplaceSeries', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+'******************************************************************************************************************************************************************
+
+Sub sConfirm(strWindow,sKeyWord )
+'Sub sConfirm()
+  
+On Error Resume Next
+
+Dim strTemp , objConfirm, objOk , objTemp 
+
+  strTemp ="WPFObject(""Button_Yes"")" 
+  Set objConfirm = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name", strTemp, 50, True)
+  'strWindow = "Find And Delete Success"
+  'sKeyWord = "Delete"
+  If objConfirm.Exists Then 
+      objConfirm.Click 
+      Delay 200
+      strTemp ="WPFObject(""Button_OK"")" 
+      'strWindow = "Find And Replace Success"
+       'Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Find And Delete Success").WPFObject("CustomMessageBoxWindow", "Find And Delete Success", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_OK").WPFObject("RenderContentPresenterElement", "", 1).WPFObject("Label_Ok")
+
+      Set objOk = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", strWindow).FindChild("Name", strTemp, 50, True)
+       'Set objOk = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", strWindow).WPFObject("CustomMessageBoxWindow", "Find And Replace Success", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).
+      'Set objOk =   Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Find And Delete Success").WPFObject("CustomMessageBoxWindow", "Find And Delete Success", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_OK")
+      If objOk.Exists Then 
+          objOk.Click
+          Delay 200
+      End If
+  End If
+  
+  'Close the opened window
+
+    Select Case sKeyWord
+        Case "Replace"
+          strTemp = "WPFObject(""Button"", ""Close"", 1)"
+          Set objClose = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name", strTemp, 50, True)
+          
+        Case "Delete"
+          strTemp = "WPFObject(""Button"", ""Close"", 1)"
+          Set objClose = Sys.Process("EdgeClient").WPFObject("HwndSource: SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete").FindChild("Name", strTemp, 50, True)
+     End Select
+    
+      If objClose.Exists Then 
+      objClose.Click
+      Delay 200
+      strTemp ="WPFObject(""Button_Yes"")" 
+      Set objConfirm = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Please Confirm").FindChild("Name", strTemp, 50, True)
+      If objConfirm.Exists Then 
+        objConfirm.Click
+      End If
+    End If 
+    
+  Set objConfirm = Nothing 
+  Set objOk = Nothing 
+  Set objClose = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sConfirm', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Sub
+'******************************************************************************************************************************************************************
+'Testcase:TC_SS_PRT11: Veirfy Modified Schedule Release Date and status for folder is appered or not
+Sub sFindAndReplaceFolder(strParameters)
+'Sub sFindAndReplaceFolder()
+
+On Error Resume Next  
+   Dim strTemp, objTemp, strSeriesID, intRowCnt,arrStartDate()
+   
+    strTimepoint = getSplitValue(strParameters,"Timepoint")
+    strWindow = getSplitValue(strParameters,"Window")
+    strSeriesID = getSplitValue(strParameters,"SeriesID")
+    
+    sKeyWord = "Replace"
+    
+'    strTimepoint= "12/1/2024"
+'    strWindow = "Find And Replace Success" 
+'     strEnvi = "Edge ( US Integration )"
+    
+'    'Open the Source Schedule   
+    Call sOpenSelectedSS(strParameters)
+    Delay 2000 , "Please wait..."
+    
+    
+    'Click on FindAnd ReplaceScedules in Folder Button    
+    strTemp = "WPFObject(""ContentControlEx"", ""Find And Replace Schedules"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click 
+    strTemp = "WPFObject(""ContentControlEx"", ""Find And Replace Schedule In Folder"", 2)"   
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click
+    Delay 2000
+    
+    
+   ' Enter the Timpoint and Click on Find Button
+   
+      strTemp = "WPFObject(""DateEdit"", "", 1)"
+      Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 1).WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 1).FindChild("Name", strTemp, 50, True)
+      objTemp.set_Text(strTimepoint)
+      strTemp = "WPFObject(""Button"", ""Find"", 1)"
+      Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").FindChild("Name", strTemp, 50, True)
+      objTemp.Click
+      Delay 2000
+    
+    'Obtine the Required Data before Replace
+    strTemp = "WPFObject(""FindAndReplaceScheduleGridControl"")"
+    Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").WPFObject("Root").FindChild("Name", strTemp, 50, True)
+    intRowCnt = objGrid.wRowCount
+    Redim arrStartDate(intRowCnt)
+    For IntI= 0 to  intRowCnt-1   
+      arrStartDate(IntI)= objGrid.DataContext.Item(IntI).SsDateTo
+      'arrSeriesID(IntI)= objGrid.DataContext.Item(IntI).SeriesId    
+    Next
+      'msgbox arrSeriesID(0)
+    strModifiedDate = DateAdd("d",3,arrStartDate(0))
+   ' msgbox strModifiedDate
+    
+   'Enter the Replace Criteria:
+    Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Root").WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 2)
+    objTemp.WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 1).WPFObject("DateEdit", "", 1).set_Text(strModifiedDate)
+    objTemp.WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 2).WPFObject("DateEdit", "", 1).set_Text(strModifiedDate)
+    objTemp.WPFObject("StackPanel", "", 1).WPFObject("StackPanel", "", 3).WPFObject("ComboBox", "", 1).set_Text("Released")
+    
+    'Click on Select All Button
+    
+    strTemp = "WPFObject(""Button"", ""Select All"", 1)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click
+    
+    'Click on Replace All Button
+    strTemp = "WPFObject(""Button"", ""Replace All"", 3)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click    
+    Delay 200 
+    Call sConfirm(strWindow , sKeyWord )
+    
+    'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesGridControl")
+    
+    'Verify Modified Release Data 
+    strTemp = "WPFObject(""SourceSeriesGridControl"")"
+    Set objGrid1 = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    'nRowCnt1 = objGrid1.VisibleRowCount-1
+     nCount=0 
+    P=0
+    strDate = Split(strModifiedDate ," ")
+    For IntI= 1 to objGrid1.VisibleRowCount   
+       Call objGrid1.WPFObject("TableView", "", 1).WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", IntI).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).Click()   
+       ' Call objGrid1.ClickCell(IntI, "Series ID") 
+      Delay 500 
+      strTemp = WPFObject("SourceSeriesScheduleGridControl")
+      Set objGrid2 = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl")
+      nRowCnt2 = objGrid2.VisibleRowCount-1
+      For IntJ= 0 to  nRowCnt2
+            strNewTimpoint = objGrid2.DataContext.SourceCollection.Item(IntJ).Timepoint           
+            If Cstr(strNewTimpoint) = Cstr(strTimepoint)Then  
+               strNewStartDate= objGrid2.DataContext.SourceCollection.Item(IntJ).SsDateTo
+               strReleaseStatus = objGrid2.DataContext.SourceCollection.Item(IntJ).ScheduleStatusId
+               strDate1 = Split(strNewStartDate," ")
+               If Cstr(strDate(0))= Cstr(strDate1(0))And Cint(strReleaseStatus) = 3 Then
+                 nCount =  nCount +1
+                 Exit For
+               End If
+             End If 
+         Next 
+          If nCount =  Cint(intRowCnt) Then 
+              'Exit For             
+              strTCRemarks =  " All the schedules in the folder for timepoint date "& strTimepoint &_
+                               "  is Updated for the given Start and End Time And Release Status is Changed to Released"
+             strTestCaseResult="PASS" 
+             Exit For
+          Else
+              strTCRemarks =  " Not all the schedules in the folder for timepoint date "& strTimepoint &_
+                               "  is Updated for the given Start and End Time And Release Status is Changed to Released"
+             strTestCaseResult="FAIL"          
+          End if     
+        Next
+        
+    Call sCloseWithYes(1299)
+    Delay 1000  
+    Call sSourceScheduleDrop()
+    
+    Set objTemp= Nothing
+    Set objGrid = Nothing 
+    Set objGrid1 = Nothing 
+    Set objGrid2 = Nothing 
+     
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sFindAndReplaceFolder', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If              
+End Sub
+'******************************************************************************************************************************************************************
+'Testcase:TC_SS_PRT13: Delete the Pending Schdeule Veify the same.
+
+Sub sFindAndDeletSeries(strParameters)
+'Sub sFindAndDeletSeries()
+
+On Error Resume Next
+
+Dim strTemp, objTemp, strSeriesID, intRowCnt
+
+
+    strWindow = getSplitValue(strParameters,"Window")
+    sKeyWord = "Delete"
+    'nBlnFlag = True
+    
+    'strWindow = "Find And Delete Success"
+      
+   'Add the Pending Sceidule before searching and deleting 
+    Call sAddSchedule(strParameters)
+          
+  'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor() 
+        
+   'Open the Source Scedule 
+    Call sOpenSelectedSS(strParameters)
+    Delay 2000 , "Please wait" 
+      
+    'Click on Find And Delete shcedule in Sereis
+    
+    strTemp = "WPFObject(""ContentControlEx"", ""Find And Delete Schedules"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click 
+    strTemp = "WPFObject(""ContentControlEx"", ""Find And Delete Schedules In Series"", 2)"   
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click
+    Delay 2000 
+    
+    'Select The Pending Search Critera and Click on Find Button     
+    Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete").WPFObject("SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1)
+    Set objCombo = objTemp.FindChild("Name", "WPFObject(""ComboBox"", """", 2)", 50, True)
+    objCombo.set_Text("Pending")
+    Set objFind = objTemp.FindChild("Name", "WPFObject(""Button"", ""Find"", 2)", 50, True)
+    objFind.Click
+    
+    'Select the Pending Schedule
+    ' Sys.Process("EdgeClient").WPFObject("HwndSource: SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete").WPFObject("SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 1).WPFObject("StackPanel", "", 1)
+    Set objGrid = objTemp.FindChild("Name", " WPFObject(""FindAndDeleteScheduleGridControl"")", 50, True)
+    Call objGrid.ClickCell(0, 0)
+   
+    'Click on Delete Selected Button 
+    strTemp = "WPFObject(""Button"", ""Delete Selected"", 4)"
+    Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete").FindChild("Name", strTemp, 50, True)
+    objTemp.Click
+    
+    Call sConfirm(strWindow,sKeyWord)
+    Call sVerifyDelete()
+    
+    Set objTemp = Nothing 
+    Set objGrid = Nothing 
+    Set objCombo = Nothing 
+    Set objFind = Nothing 
+          
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sFindAndDeletSeries', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If      
+End Sub
+'******************************************************************************************************************************************************************
+Sub sVerifyDelete()
+
+On Error Resume Next
+    
+    nBlnFlag= True
+
+    'Verify the Pending Schdeule is deleted or not:    
+    strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    
+    For IntI= 0 to objTemp.VisibleRowCount-1
+      strTimepoint = objTemp.DataContext.SourceCollection.Item(IntI).Timepoint
+      If Cstr(DescText)= Cstr(strTimepoint)Then 
+        nBlnFlag = False     
+      End IF
+    Next 
+    
+    If nBlnFlag= True Then 
+      strTCRemarks =  "The selected pending schedule is deleted from the series "
+      strTestCaseResult="PASS" 
+    Else 
+      strTCRemarks =  "The selected pending schedule is not deleted from the series "
+      strTestCaseResult="FAIL" 
+   End If 
+   
+   Set objTemp = Nothing
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sVerifyDelete', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+'******************************************************************************************************************************************************************
+'Testcase:TC_SS_PRT14: Update workspace after Delete the Pending Schdeule Veify the same.
+Sub sUpdateDelete(strParameters)
+
+On Error Resume Next
+
+        
+  'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor() 
+    
+    
+   'Open the Source Scedule 
+    Call sOpenSelectedSS(strParameters)
+    Delay 2000 , "Please wait"
+    
+   
+    'Veify the Deleted Schedule is updated or not 
+    
+    Call sVerifyDelete()
+    
+    'Drop the Sceudle 
+    
+    Call sCloseSWV()
+     Delay 1000  
+    Call sSourceScheduleDrop()
+          
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sUpdateDelete', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If    
+End Sub
+'******************************************************************************************************************************************************************
+'Testcase:TC_SS_PRT15: Delete the Pending Schdeule for the folder Veify the same.
+Sub sFindAndDeletFolder(strParameters)
+'Sub sFindAndDeletFolder()
+  
+On Error Resume Next
+
+  Dim strTemp, objTemp
+  
+      
+      strWindow = getSplitValue(strParameters,"Window")
+      sKeyWord = "Delete"
+      blnFlag = True
+      
+'      strWindow = "Find And Delete Success"
+'      strEnvi = "Edge ( US Integration )"
+  
+  '    'Open the Source Schedule   
+    Call sOpenSelectedSS(strParameters)
+    Delay 2000 , "Please wait..."
+    
+    'Click on "Find and Delete in Folder" Button     
+    strTemp ="WPFObject(""ContentControlEx"", ""Find And Delete Schedules"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click
+    Set objTemp =Sys.Process("EdgeClient").WPFObject("HwndSource: PopupRoot", "").WPFObject("PopupRoot", "", 1).WPFObject("Decorator", "", 1).WPFObject("NonLogicalAdornerDecorator", "", 1).WPFObject("BarPopupBorderControl", "", 1).WPFObject("PopupMenuBarControl", "", 1).WPFObject("BarItemLinkInfo", "", 2).WPFObject("BarButtonItemLinkControl", "", 1).WPFObject("ContentControlEx", "Find And Delete Schedule In Folder", 2)
+    objTemp.Click
+    
+   'Set schedule status as pending  and Click on Find Button
+   Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete").WPFObject("SourceSeriesScheduleFindDeleteView", "Source Series Schedule Find And Delete", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("AdornerDecorator", "", 1).WPFObject("WaitControl").WPFObject("Grid", "", 1).WPFObject("GroupBox", "", 1).WPFObject("StackPanel", "", 1)
+   strTemp= "WPFObject(""ComboBox"", """", 2)"
+   Set objCombo = objTemp.FindChild("Name", strTemp, 50, True)
+   objCombo.set_Text("Pending") 
+   Set objFind =  objTemp.WPFObject("StackPanel", "", 2).WPFObject("Button", "Find", 2)
+   objFind.Click
+   
+   
+   'Select All Adn Delete all Pending Schedule
+   
+   'Click on Select All Button
+    
+    strTemp = "WPFObject(""Button"", ""Select All"", 1)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click
+   
+    strTemp = "WPFObject(""Button"", ""Delete All"", 3)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    objTemp.Click
+    
+    'Close the Window
+    Call sConfirm(strWindow , sKeyWord )
+    
+    'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesGridControl")
+    strTemp = "WPFObject(""SourceSeriesGridControl"")"
+    Set objGrid = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    Set objGrid1 = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("Grid", "", 1).WPFObject("SourceSeriesScheduleGridControl")
+      
+    
+    'For IntI=1 to objGrid.VisibleRowCount
+      Call objGrid.WPFObject("TableView", "", 1).WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).Click()   
+        Delay 200
+      For IntJ= 0 to objGrid1.VisibleRowCount-1
+        strPendingstatus =objGrid1.DataContext.SourceCollection.Item(0).ScheduleStatusId
+        If Cint(strPendingstatus) = 1 Then
+          blnFlag = False
+        End IF
+      Next
+    'Next
+    
+    
+    If blnFlag = True Then 
+      strTCRemarks = "The selected pending schedules in a selected folder are deleted. "
+      strTestCaseResult="PASS"
+    Else
+      strTCRemarks = "The selected pending schedules in a selected folder are deleted. "
+      strTestCaseResult="FAIL"
+    End If
+    
+    'Close all window and Clear the memory 
+    Call sCloseWithYes(1299)
+    Delay 1000  
+    Call sSourceScheduleDrop()
+    
+    Set objTemp= Nothing
+    Set objGrid = Nothing 
+    Set objGrid1 = Nothing 
+    Set objCombo = Nothing     
+    Set objFind = Nothing
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sFindAndDeletFolder', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+End Sub
+
+'******************************************************************************************************************************************************************
+'Testcase:TC_SS_PRT16: Verify Release status of the schedule is updated from 'Pending' to 'Released' after uploading the Timepoint
+
+Sub sGetLatestStatus(strParameters)
+  On Error Resume Next
+  
+  Dim strTemp, objTemp, strSeriesID
+  
+  strSeriesID = getSplitValue(strParameters,"SeriesID")
+  strForecast = getSplitValue(strParameters,"Forecast")   
+   
+   'Open the SourceSchedule and Add Timpoint Upload the Source Schedule   
+   Call sAddSchedule(strParameters)
+   
+  'Upload the Workspace
+   Call fUploadWorkSpace()
+   Call sEdgeProcessor()
+   
+   
+  'Open the Source Schedule   
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please Wait..."
+   
+   'Open Global STP for the Given  Seires using Series Search    
+   Call sSeriesSearch(strSeriesID)
+   
+  'Upload STP for the Given SeiresID  
+  Call sVerifyTimepointDate(strParameters, strSeriesID)
+  
+  'Close Source Series Window
+   Call sClosePanel2withYes(637)
+  Delay 1000
+  
+  'Click on GetLatestStaus Button
+  strTemp = "WPFObject(""ContentControlEx"", ""Get Latest Status"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True) 
+  objTemp.Click
+  Delay 200
+  
+  'Click Ok button in Confirmation window
+  strTemp ="WPFObject(""Button_OK"")" 
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Source Schedule Success").FindChild("Name", strTemp, 50, True)
+ 
+  If objTemp.Exists Then 
+    objTemp.Click
+  End If
+  
+  
+  strTemp = "WPFObject(""SourceSeriesScheduleGridControl"")"
+   Set objSourceGrid =Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+   
+   If strForecast <> "Yes" Then    
+       For IntI = 0 to  objSourceGrid.VisibleRowCount-1 
+          strTimepoint = objSourceGrid.DataContext.SourceCollection.Item(IntI).Timepoint 
+          strRStatus = objSourceGrid.DataContext.SourceCollection.Item(IntI).ScheduleStatusId
+          If Cstr(strTimepoint) = Cstr(DescText) And  Cint(strRStatus) = 3 Then
+             strTCRemarks =  "Schedule status is  updated to 'Released' for :" & DescText & " TimePoint"
+             strTestCaseResult = "PASS"
+             Exit For
+          Else
+             strTCRemarks =  "Schedule status is  not  to 'Released'   for :" & DescText& " TimePoint"
+             strTestCaseResult = "FAIL"           
+          End If
+       Next
+       
+       'SourceSchedule Clean Up
+      Call sCloseWithYes(1299)
+      Delay 1000  
+      Call sSourceScheduleDrop()
+   
+   End If
+   
+    If strForecast = "Yes" Then    
+       For IntI = 0 to  objSourceGrid.VisibleRowCount-1 
+          strTimepoint = objSourceGrid.DataContext.SourceCollection.Item(IntI).Timepoint 
+          strRStatus = objSourceGrid.DataContext.SourceCollection.Item(IntI).ScheduleStatusId
+          If Cstr(strTimepoint) = Cstr(DescText) And  Cint(strRStatus) = 1 Then
+             strTCRemarks =  "Schedule status is  not updated to 'Released' for :" & DescText & " TimePoint,  after changing the 'Timepoint Type' to 'Forecast'"
+             strTestCaseResult = "PASS"
+             Exit For
+          Else
+             strTCRemarks =  "Schedule status is updated to 'Released'   for :" & DescText& " TimePoint, after changing the 'Timepoint Type' to 'Forecast'"
+             strTestCaseResult = "FAIL"           
+          End If
+       Next
+       
+       'SourceSchedule Clean Up
+        Call sCloseSWV()
+        Delay 1000  
+        Call sSourceScheduleDrop()
+   
+   End If
+     
+  Set objTemp = Nothing 
+  Set  objSourceGrid = Nothing 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sGetLatestStatus', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If     
+End Sub
+
+'******************************************************************************************************************************************************************
+'Testcase:TC_SS_PRT18: Verify Daily Estimated Release time - revised historical data
+
+Sub sDailyRelease(strParameters)
+'Sub DailyRelease()
+  On Error Resume Next
+  Dim strTemp, objTemp, strSeriesID, intRowCnt
+   
+   
+  strSeriesID = getSplitValue(strParameters,"SeriesID")  
+  strLatency = getSplitValue(strParameters,"Latency")
+  
+   'Open the Source Schedule   
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please wait"
+     
+ '  Click on required Series Id
+    Call sFindSeriesID(strSeriesID)
+       
+ '  Modify Timepoint Latency and Released TimePoint   
+   Set objGrid = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1)
+   Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1).WPFObject("DateEdit", "", 1).Keys("12/10/2018")
+   objGrid.WPFObject("DateEdit", "", 1).set_DateTime(Date)
+   objGrid.WPFObject("DateEdit", "", 2).set_DateTime(Date)
+   objGrid.WPFObject("TextBox", "", 1).set_Text(strLatency)
+   Delay 2000
+
+    'Upload the Workspace
+    Call fUploadWorkSpace()
+    Call sEdgeProcessor()
+    
+    
+    'Open STP File  
+    Call sOpenSourceDispalyViewer()
+    Call sGridSelection_SourceModule(strParameters)
+    'Call sGridSelection(strParameters)  
+    Delay 2000 
+    strTemp = "WPFObject(""ContentControlEx"", ""Open Global STP"", 2)"
+    Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+    If objTemp.IsEnabled then 
+      objTemp.Click
+    End If
+    
+   Delay 5000,"Opening STP.. Pls wait.."
+   Call sExcelFullHistory()   
+   Call sVerifyTimepointDate(strParameters, strSeriesID)
+   
+   'Verify Release Status by opening the Source Schedule   
+   Call sOpenSelectedSS(strParameters)
+   Delay 2000 , "Please wait"
+   
+   
+   'Click on required Series Id
+   Call sFindSeriesID(strSeriesID)
+   'strTemp = 
+   Set objTemp =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("Grid", "", 2).WPFObject("ScrollViewer", "", 1).WPFObject("Grid", "", 1).WPFObject("Label", "", 4) 
+   strText = objTemp.Content
+   If strText = "Released" Then 
+      strTCRemarks =  "Schedule status is updated to 'Released' "
+      strTestCaseResult = "PASS"
+   Else
+      strTCRemarks =  "Schedule status is not  updated to 'Released' "
+      strTestCaseResult = "FAIL"
+   End If
+   
+   'Clean Up
+   Call sCloseSWV() 
+   Call sSourceScheduleDrop()
+   
+   Set objGrid = Nothing 
+   Set objTemp = Nothing 
+   
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sDailyRelease', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If    
+End Sub
+
+
+
+
+
+
+
+
+

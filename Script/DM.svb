@@ -1,0 +1,391 @@
+﻿'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+''**************************************************************
+'ALL DM Tescases will be written in this unit
+'Start Date    : 27/01/2020
+'Created by: Chethana S R
+'************************************************************** 
+'Testcase:TC_DM_PRT01 : Check for inserting formula
+
+Sub sCheckInsertFormula(strParameters)
+'Sub sCheckInsertFormula()
+  On Error Resume Next
+  
+  'Open the required STP File
+  'Call fOpenSTP(strParameters)
+  
+  Dim strSeriesName,strSourceSeriesName,strSeriesSourceCode,strSeriesStatus,strSeriesType,STPSheetName
+  Dim strSeriousCountry,strOutputUnit,strSeriesNature,strSeriesFreq,strSourceUnit,strUnitType,strTestDataFile
+  Dim strAliasName,strFileName,STP,strTimepoints,strText,strStartcolumn
+  Dim i,FilePath,intcount,intj, intCol
+  Dim objArray,oSTP_ExcelObj,objSTPXls,objActiveWB,netUIHWND,wndEXCEL7
+  Dim intlastRow,lastColumn,inti,strTemp,objErrmsg,objOkClick,File, intPRowNumber, intSRowNumber
+
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")
+  strPrimarySID= getSplitValue(strParameters,"PrimarySID")
+  strSecondarySID= getSplitValue(strParameters,"SecondarySID")
+  intPRowNumber = 0 
+  intSRowNumber= 0 
+  blnFlag = False
+  
+'  strPrimarySID="397631647"
+'  strSecondarySID= "428285857"
+'  STPSheetName = "A1_1"
+'  strTestDataFile = "YYY-Automation_UIT4_1-Compute"
+  
+  'Create two Series First
+   Call  sCreateSeries_Compute(strParameters)
+   msgbox strSeriesID
+  
+  
+   'Get the File Loacation 
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+
+ 
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+
+    With .WorkSheets(STPSheetName)
+      Dim r
+        delay Status_Wait, "Finding last Row the Excel sheets.. Pls wait.."
+        For r = 4 To .UsedRange.Rows.Count
+          if Cstr(.UsedRange.Cells(r, 1).Value) = strPrimarySID Then 
+            intPRowNumber = r  
+          End If         
+          if Cstr(.UsedRange.Cells(r, 1).Value) = strSecondarySID Then
+              intSRowNumber = r
+          End if 
+          if intPRowNumber > 0 And intSRowNumber >0 Then
+            Exit For
+          End If
+        Next  
+        'enter the formula id(397631647) in the Formula field
+        .Cells(intSRowNumber,18).Select 
+        .Cells(intSRowNumber,18).Value="id("& strPrimarySID & ")" 
+        Call sEdgeProcessor()
+        Delay 2000, "Please wait Formula is Entered" 
+        
+        'click on Mark Good
+        Call sClicKMarkGood(2,strTestDataFile)
+          
+        ''Upload Series
+        Call sClickUpload(2,strTestDataFile)
+        
+        'click No on File close Window
+        Call sClickonInformation(2,"No")
+        
+         Call sClickRefresh(2,strTestDataFile)
+         Call sExcelFullHistory()
+         
+         With .Sheets(STPSheetName).Select
+         End With
+          For inti = 3 to .UsedRange.Columns.Count
+            strText=.Cells(2,inti)
+           If isDate(strText)  then
+              If .UsedRange.Cells(intSRowNumber, inti).Value =  .UsedRange.Cells(intPRowNumber, inti).Value Then
+                blnFlag=True
+              Else
+                blnFlag=False
+                Exit For
+              End If
+           End If
+          Next
+      End With 
+    End With
+    
+    'Validate the TP Value
+  If blnFlag = True then 
+    strTCRemarks = strTCRemarks  &"The generated  timepoints are same as parent series timepoints"
+    log.Message strTCRemarks
+    strTestCaseResult="PASS"
+  Else
+    strTCRemarks = strTCRemarks  &"The generated  timepoints are not same as parent series timepoints"
+    log.Message strTCRemarks
+    strTestCaseResult="FAIL"
+  End If
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sCheckInsertFormula' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+  
+End Sub
+
+'**************************************************************************************************************************
+Sub sComputePlus_Verify(strParameters)
+'Sub sComputePlus_Verify()
+
+On Error Resume Next
+  Dim objSTPXls,objArray,oSTP_ExcelObj,netUIHWND,File
+  Dim i,strAliasName,strFileName,FilePath,STPSheetName,StrSeriesId1,StrSeriesId2,intlastRow,intPreRow ,intRow,strTemp,strTestDataFile,STP,lastColumn
+  Dim strResultText , strStartcolumn
+   
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")
+	strTimepoints = getSplitValue(strParameters,"Timepoints")
+  strExcelNumber = getSplitValue(strParameters,"ExcelNumber")
+  strExcelNumber =Cint(strExcelNumber)
+  'strResultText= getSplitValue(strParameters,"ResultText")
+		
+		
+'		
+'		STPSheetName="A1_1"
+'		'STP="Compute_DM"
+'		strTestDataFile="YYY-Automation_UIT4_1-Compute"
+'		strTimepoints="6"
+'    'strSeriesID = "395236577"
+'    strExcelNumber = 2   
+'    strTestCase_no ="TC_DM_PRT02"
+   
+
+  
+
+'Get the File Loacation 
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+
+    With .WorkSheets(STPSheetName)
+      Dim r
+      lastColumn=.UsedRange.Columns.Count
+        Delay Status_Wait, "Finding last Row the Excel sheets.. Pls wait.."
+        For r = 1 To .UsedRange.Rows.Count
+          If IsEmpty(.UsedRange.Cells(r, 1).Value) = True AND (.UsedRange.Cells(r, 1).Text) ="" Then           
+           intlastRow=r							
+           Exit For
+          End  If 
+        Next
+         intlastRow=intlastRow-1
+         intRow1 =intlastRow-1
+         intRow2=intlastRow-2 
+				  
+        If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT01"))Then 
+            .Cells(intRow1,1).Select
+            StrSeriesId=.Cells(intRow1,1).Value              
+           .Cells(intLastRow,18).Select             
+           .Cells(intLastRow,18).Value="id("& StrSeriesId & ")" 
+            strResultText =  "Inserting Formula : id(" &Cstr(StrSeriesId)&")"
+        ElseIf  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT02"))Then        
+           .Cells(intRow1,1).Select
+            StrSeriesId=.Cells(intRow1,1).Value              
+           .Cells(intLastRow,18).Select             
+           .Cells(intLastRow,18).Value="id("& StrSeriesId & ")100"
+           strResultText =  "Inserting Formula : id(" &Cstr(StrSeriesId)&")100"
+        ElseIf  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT03_04"))Then
+           .Cells(intRow1,1).Select
+            StrSeriesId=.Cells(intRow1,1).Value              
+           .Cells(intLastRow,18).Select             
+           .Cells(intLastRow,18).Value="id("& StrSeriesId & ")" 
+            Call  sTestFormula(strExcelNumber,strTestDataFile)
+            strResultText = strTCRemarks & "<br />" &  "Inserting Formula : id(" &Cstr(StrSeriesId)&")" 
+        ElseIf  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT05"))Then
+            For inti = 3 to lastColumn 
+              strText=.Cells(2,inti)
+              If UCASE(strText)=UCase("ForeCast") then 
+                .Cells(intlastRow,inti).Value="Yes"              
+              ElseIf isDate(strText)  then
+                .Cells(intlastRow,inti + 1).select 
+                 strStartcolumn = inti + 1
+                  strTimepointValue =.Cells(intlastRow,inti+ 1).Value 
+                 Exit For
+              End If
+            Next             
+        Else
+          intcount = 0 
+           For inti = 3 to lastColumn 
+            strText=.Cells(2,inti)
+            If isDate(strText)  then
+              If intcount<=5 then
+                  .Cells(intlastRow-1,inti1).select
+                  .Cells(intlastRow-1,inti1).Value=strTimepoints*10
+                   strTimepoints=strTimepoints + 1                     
+              Else
+                  Exit For
+            End if 
+              intcount=intcount1                 
+            End if              
+           Next
+           strResultText = "Fucntionality for 'Revised Timepoint for series Id is same as parent series ID' "
+        End if 
+                  
+        Delay 6000, "Please wait"			
+      ''Mark Good
+        Delay 1000,"Mark Good..."
+        With objSTPXls
+          With .WorkSheets(STPSheetName)
+               .Cells.Select
+          End With
+        End With
+          
+       Call sClicKMarkGood(strExcelNumber,strTestDataFile)
+          
+      ''Upload Series
+      If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT06"))Then
+        'click on Partial UPload
+        Call  sClickPartialUpload(strExcelNumber,strTestDataFile)
+        ''Click om Compute
+        Call sClickComputePlus(strExcelNumber,strTestDataFile)          
+      Else
+          Call sClickUpload(strExcelNumber,strTestDataFile)            
+           'click No on File close Window
+           Call sClickonInformation(strExcelNumber,"No")  
+           'Refresh Series
+            With objSTPXls
+              With .WorkSheets(STPSheetName)
+                   .Cells.Select
+                    Call sClickRefresh(strExcelNumber,strTestDataFile)
+                    Call sExcelFullHistory
+                    .Cells(intlastRow,lastColumn).Select                
+              End With
+           End With  
+       End If
+     End With
+   End With
+   
+      ' checking addition
+      With objSTPXls
+       With .WorkSheets(STPSheetName)
+        if  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT05"))Then 
+          .Cells(intlastRow,strStartcolumn).select 
+          .Cells(intLastRow,strStartcolumn).Value = strTimepointValue*10
+          Delay 200
+          strValue = .Cells(intlastRow,strStartcolumn ).Value
+          If strValue = strTimepointValue*10 then 
+              strTCRemarks =  "The System allow to revise the Forecast timepoint from " & Cstr(strTimepointValue) &  "To "& Cstr(strValue)
+              log.Message strTCRemarks
+              strTestCaseResult="PASS"
+            Else
+              strTCRemarks = "The System did not allow to revise the Forecast timepoint " 
+              log.Message strTCRemarks
+              strTestCaseResult="FAIL"
+          End if
+         Exit Sub           
+        End If
+       
+       For inti = 3 to lastColumn
+          strText=.Cells(2,inti)
+          If isDate(strText)  then
+           If IsEmpty(.UsedRange.Cells(intlastRow-1, inti).Value) = False AND (.UsedRange.Cells(intlastRow-1, inti).Text) <> "" Then           
+             If IsEmpty(.UsedRange.Cells(intlastRow, inti).Value) = False AND (.UsedRange.Cells(intlastRow, inti).Text) <> "" Then
+              If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT01")) OR _
+                  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT03_04")) OR _
+                  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT06")) Then 
+                   intComputeValue = (.UsedRange.Cells(intRow1, inti).Value)                
+              ElseIf  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_DM_PRT02"))Then 
+                 intComputeValue = (.UsedRange.Cells(intRow1, inti).Value)+100                
+              Else                        
+                 intComputeValue = (.UsedRange.Cells(intRow1, inti).Value)+(.UsedRange.Cells(intRow2, inti).Value)
+              End If
+              strExpectedValue = (.UsedRange.Cells(intLastRow, inti).Value)
+              If strExpectedValue =  intComputeValue Then
+                blnFlag=True
+              Else
+                blnFlag=False
+                Exit For
+              End If
+             End If
+            End  If             
+          End if 
+       Next
+         End With
+      End With										
+      If blnFlag=True then
+        strTCRemarks =  strResultText  +" is working as Expected"
+        log.Message strTCRemarks
+        strTestCaseResult="PASS"
+        Err.Clear()
+      Else
+        strTCRemarks = strResultText  + " is not  working as Expected"
+        log.Message strTCRemarks
+        strTestCaseResult="FAIL"
+      End If
+
+      'Close the Opened Excel File
+      Call ExcelProcessKill
+      Delay(2000)
+      Call SClosesource()
+      
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sComputePlus_Verify' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+End Sub 
+'*****************************************************************************************************************
+Function  sTestFormula(ExcelNumber,strTestDataFile)
+'Function sTestFormula()
+  On Error Resume Next
+  
+  Dim NetUIHWND, strTemp, nRowCount, objGrid, blnFalg
+'  ExcelNumber = 2
+'  blnFalg = False
+'  strTestDataFile="YYY-Automation_UIT4_1-Compute"
+  
+  Set wndXLMAIN = Aliases.EXCEL.wndXLMAIN
+  wndXLMAIN.Activate
+  Delay 1000  
+  Set NetUIHWND = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+ 
+  'Click on Edge Button
+  strTemp = "MSAAObject(""pt_EDGE"")"
+  Set objEdge = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objEdge.Click()
+  
+  'Click on TestFormula Button 
+  strTemp = "MSAAObject(""btn_Test_Formula"")"
+  Set objTemp = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objTemp.Click()
+  
+  log.message "TestFormula button is clicked"
+  'Click on Evalute
+  Set objTemp  =  Sys.Process("EXCEL", 2).WinFormsObject("FormulaForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("tableLayoutPanel5").WinFormsObject("evaluateButton")
+  Call objTemp.Click()
+  Call sEdgeProcessor()
+  Delay 2000
+  
+  'Verify Value:
+  Set objGrid = Sys.Process("EXCEL", 2).WinFormsObject("FormulaForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("ResultPageView").WinFormsObject("ResultPage").WinFormsObject("ResultGridView")
+  nRowCount = objGrid.wRowCount
+  
+  for I = 0 to nRowCount-1
+   if objGrid.wValue(I, 2)= objGrid.wValue(I, 3)Then 
+      blnFalg= True
+   End If   
+  Next
+  
+  'Click on Insert Button 
+  Set objTemp = Sys.Process("EXCEL", 2).WinFormsObject("FormulaForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("tableLayoutPanel2").WinFormsObject("okButton")
+  Call objTemp.Click()
+  
+  
+  IF blnFalg = True Then 
+    strTCRemarks = " The formula result is shown in Formula Editor window" & strTestCase_no& " is Pass"
+    log.Message strTCRemarks
+  Else
+   strTCRemarks = " The formula result is shown in Formula Editor window" & strTestCase_no& " is Fail"  
+   log.Message strTCRemarks     
+  End If 
+  
+        
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sTestFormula' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+  
+End Function 

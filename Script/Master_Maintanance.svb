@@ -1,0 +1,259 @@
+﻿'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+
+''**************************************************************
+'Start    : All Master Maintance Related script will be written in this unit
+'Start Date    : 01-June-2020
+'Created by: Chethana S R
+'************************************************************** 
+'Testcase:TC_SOURCE_3-6: Add Unit Item 
+Sub sUnit_Component_Maintenance(strParameters)
+'Sub sUnit_Component_Maintenance()
+  
+  On Error Resume Next
+  Dim strTemp, objTemp, blnFalg
+  
+  blnFalg= False
+  
+  'strTestCase_no = "TC_Unit_3"
+  
+  'Select "Unit" option from 'Master Maintenance' dropdown
+  Call sHome_MasterMaintenance()
+  Call sEdgeProcessor()
+  Delay 2000 , "Unit Window is Loaded"
+  
+  'Select  Unit Item from the dropdown "Unit Component Maintenance"
+  Call sClickSubUnitCategory(strParameters)
+  Call sEdgeProcessor()
+  Delay 2000 
+  
+  'Close the Layout one
+  Call SClosesource()
+  Call sEdgeProcessor()
+  
+  'Click on Add New Button  
+  strTemp="WPFObject(""ContentControlEx"", ""Add New"", 2)"
+  Call sObjClick(strTemp)
+  
+  'strDesc=aqDateTime.Now
+  'DescText=Replace(strDesc,"-","")
+  'DescText=Replace(DescText,":","")
+  'DescText = Replace(DescText," ","_")
+  
+  'Verify Add Currency under New Unit Component
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_Unit_3")) Then
+    DescText = aqConvert.IntToStr(Minute(time))&"A"     
+    strTemp= "WPFObject(""CurrencyGridControl"")"
+    Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+   
+    'Enter the "Currency code" & "Currency Name"
+    Call objGrid.ClickCell(objGrid.wRowCount-1,"Currency Code")
+    Sys.Keys (DescText)
+    Delay 1500,"Pls Wait.."
+    Call objGrid.ClickCell(objGrid.wRowCount-1,"Currency Name")
+    Sys.Keys (DescText)
+    Delay 2000,"Pls Wait.."
+    Sys.Keys ("[Tab]")
+    'Click on Upload
+    Call fUploadUnit(strParameters)
+    
+    'Verify the Uploaded Data    
+    Delay 2000
+    strTemp= "WPFObject(""CurrencyGridControl"")"
+    Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    For I = 0 to objGrid.wRowCount-1
+      If objGrid.wValue(I, 0)= DescText And objGrid.wValue(I, 1)= DescText Then 
+       blnFalg = True
+       'Close the Currency Window
+        Call SClosesource()
+        Call sEdgeProcessor()
+       Exit For
+      End If     
+    Next
+    If   blnFalg = True Then 
+        strTCRemarks = "New Currency Code and Currency Name has been created: " & DescText
+        log.message strTCRemarks
+        strTestCaseResult = "PASS" 
+    Else
+        strTCRemarks = "New Currency Code Currency Name is not created: " & DescText
+        log.message strTCRemarks
+        strTestCaseResult = "FAIL" 
+    End If
+    
+  End If
+  
+  'Verify adding Unit Item
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_Unit_4")) Then 
+    DescText = aqConvert.IntToStr(Minute(time))&"Desc"   
+    
+    strTemp= "WPFObject(""UnitItemGridControl"")"
+    Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    'Enter the ".Enter the "Description" 
+    Call objGrid.DblClickCell(objGrid.wRowCount-1,10)
+    Sys.Keys (DescText)
+    Delay 200
+    Sys.Keys("[Tab]")
+    
+    'Click on Upload
+     Call fUploadUnit(strParameters)
+     
+   ''Verify the Uploaded Data  
+    Delay 2000
+    strTemp= "WPFObject(""UnitItemGridControl"")"
+    Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    If objGrid.wValue(objGrid.wRowCount-1, 1)= DescText Then 
+        strTCRemarks = "New Unit Item is created: " & DescText
+        log.message strTCRemarks
+        strTestCaseResult = "PASS" 
+    Else
+        strTCRemarks = "New Unit Item is not created: " & DescText
+        log.message strTCRemarks
+        strTestCaseResult = "FAIL" 
+    End If 
+    
+    'Close the UnitIten Window
+        Call SClosesource()
+        Call sEdgeProcessor()   
+  End If
+  
+    'Verify adding Unit Measure ' Currently Feature is on Hold
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_Unit_5")) Then 
+    DescText = aqConvert.IntToStr(Minute(time))&"Desc"  
+    
+    strTemp= "WPFObject(""UnitItemGridControl"")"    
+    Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    'Enter the ".Enter the "Description" 
+    Call objGrid.ClickCell(objGrid.wRowCount-1,"Description")
+    Sys.Keys (strDesc)
+    Delay 200
+    
+    'Click on Upload
+    'Upload Portion is pending as Feature is currently diable
+    
+  End If
+  
+    'Verify adding Unit Item
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_Unit_6")) Then 
+     DescText = aqConvert.IntToStr(Minute(time))&"Desc"  
+    
+     strTemp= "WPFObject(""UnitFrequencyGridControl"")"
+     Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    
+    'Enter the ".Enter the "Description"      
+     Call objGrid.DblClickCell(objGrid.wRowCount-1,10)
+    Sys.Keys (DescText)
+    Delay 200
+    Sys.Keys("[Tab]")
+    
+    'Click on Upload
+     Call fUploadUnit(strParameters)
+     
+   ''Verify the Uploaded Data  
+    Delay 2000
+    strTemp= "WPFObject(""UnitFrequencyGridControl"")"
+    Set objGrid = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+    If objGrid.wValue(objGrid.wRowCount-1, 1)= DescText Then 
+        strTCRemarks = "New Unit Frequency is created: " & DescText
+        log.message strTCRemarks
+        strTestCaseResult = "PASS" 
+    Else
+        strTCRemarks = "New Unit Frequency i not created: " & DescText
+        log.message strTCRemarks
+        strTestCaseResult = "FAIL" 
+    End If 
+    
+    'Close the UnitIten Window
+        Call SClosesource()
+        Call sEdgeProcessor()   
+  End If
+    
+End Sub
+
+
+
+
+Sub sClickSubUnitCategory(strParameters)
+'Sub sClickSubUnitCategory()
+
+  Dim objTemp , objTemp1, strTemp
+  On Error Resume Next
+  
+  
+  strRequiredButton = getSplitValue(strParameters,"REQUIREDBUTTON")
+  strButtonName =  getSplitValue(strParameters,"ButtonName")
+  
+  
+  'strRequiredButton = "WPFObject(""ContentControlEx"", ""Unit Item"", 2)"
+  ' strRequiredButton = "WPFObject(""ContentControlEx"", ""Currency"", 2)"
+   'strButtonName = "Currency"
+  'strRequiredButton = "WPFObject(""ContentControlEx"", ""Unit Frequency"", 2)"
+  
+'Click on Unit Components Maintenance Button  
+  strTemp="WPFObject(""ContentControlEx"", ""Unit Components Maintenance"", 2)"
+  Set objTemp=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+  If objTemp.Exists Then 
+      objTemp.Click
+      'Click on strRequiredButton
+      Set objTemp=Sys.Process("EdgeClient").FindChild("Name",strRequiredButton,50,True)
+       If objTemp.Exists Then  
+         objTemp.Click 
+         log.message   strButtonName & " is Clicked"     
+       End If         
+  End If
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sClickSubUnitCategory', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+  
+End Sub
+
+
+'*******************************************************************************************************************************************
+'Function to upload unit Module
+Function fUploadUnit(strParameters)
+  On Error Resume Next
+  
+  strConfirmationWindow = getSplitValue(strParameters,"ConfirmationWindow")
+  'strConfirmationWindow = "Currency Page"
+  
+  'Click on UPlaod Button
+  strTemp = "WPFObject(""ContentControlEx"", ""Upload"", 2)"
+  Call sObjClick(strTemp)
+  Delay 2000
+  
+  'Click on Ok button on Confirmation Window
+   strTemp= "WPFObject(""Button_Yes"")"
+   'Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", ).WPFObject("CustomMessageBoxWindow", "Currency Page", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_ContentOffset").WPFObject("Grid", "", 1).WPFObject("PART_ContainerContent").WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("DockPanel", "", 1).WPFObject("Button_Yes")
+ 
+   Set objTemp= Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", strConfirmationWindow).FindChild("Name", strTemp, 50, True) 
+ 
+  if objTemp.Exists Then 
+    objTemp.Click()   
+    Delay 2000,"Uploading..."  
+  End If 
+  'Click on Ok button on Sucess window 
+   strTemp= "WPFObject(""Button_OK"")"
+   'Set objTemp=   Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Unit Frequency Page").FindChild("Name", strTemp, 50, True) 
+   Set objTemp= Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", strConfirmationWindow).FindChild("Name", strTemp, 50, True) 
+   If objTemp.Exists Then 
+    objTemp.Click()
+    Call sEdgeProcessor()
+    Delay 2000,"Uploading..."  
+   End If 
+  
+  
+End Function
+
+

@@ -1,0 +1,374 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+'###################################################################################################
+'Testcase:TC_SeriesSearch_1-6:Verify Serached Series Id appeared 
+Sub sSearchSeries(strParameters)
+'Sub sSearchSeries()
+  On Error Resume Next
+  Dim strTemp, objTemp, blnFlag 
+  blnFlag = False
+  
+  strSeriesID = getSplitValue(strParameters,"SeriesID")
+  strCategory = getSplitValue(strParameters,"Category")
+  strRightClickOption = getSplitValue(strParameters,"RightClickOption")
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName = getSplitValue(strParameters,"STPSheetName")
+  strButton=  getSplitValue(strParameters,"Button") 
+  strText =  getSplitValue(strParameters,"Text")
+
+  
+  
+'   strSeriesID = "368766647"
+'   strEnvi = "Edge ( US Integration )"
+'   strCategory = "Source"
+'   strButton = "WPFObject(""ContentControlEx"", ""Open Source"", 2)"
+'   strText = "The Source for the series Id:"
+'   'strTestDataFile = "YYY-Shilpa_STP-File 2 7-19-2015" 
+'   'STPSheetName = "A1_1"
+'   'strRightClickOption = "Yes"
+'  
+  'Open Serach Series Options as per the given category 
+  Call SearchSeriesOption(strCategory)
+    
+  If strCategory = "Reference" Then 
+       'Enter Series Id
+     Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("PART_FilterRow").WPFObject("ContentPresenter", "", 2).WPFObject("FilterCellContentPresenter", "", 1).WPFObject("TextEdit", "", 1)
+     objTemp.Click
+     objTemp.Keys(strSeriesID)
+     
+     Call sSeries_Search_Delay(strSeriesID)
+     Delay  5000 
+     'Wait for First Row to appear
+     Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WaitChild("WPFObject(""LightweightCellEditor"", """", 2)",60000)
+     If objTemp.Content.DisplayText = strSeriesID Then 
+        strTCRemarks = "The Series Id: '" & strSeriesID & "'  is displayed "
+        strTestCaseResult = "PASS" 
+        log.Message "The Series Id: '" & strSeriesID & "'  is displayed "
+     Else
+         strTCRemarks = "The  Series Id :'" &strSeriesID&"'  is  not displayed " 
+           strTestCaseResult = "FAIL"  
+           log.Message  "The  Series Id :'" &strSeriesID&"'  is  not displayed "      
+     End If  
+     Call sCloseWithYes(1299)
+     Delay 1000 
+     Exit Sub 
+  End If
+  
+   set objTemp= Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("PART_FilterRow").WPFObject("ContentPresenter", "", 1).WPFObject("FilterCellContentPresenter", "", 1).WPFObject("TextEdit", "", 1)
+    objTemp.Click
+    objTemp.Keys(strSeriesID)
+    Call sSeries_Search_Delay(strSeriesID)
+    Delay  5000   
+    
+    'strGrid = "WPFObject(""GridControl"")"
+    'Set objGrid=  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl")
+     
+   If strRightClickOption = "Yes" Then     
+     Delay 2000
+     Set objGrid=  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl")
+     Call objGrid.ClickCellR(0, "Series Id")
+     Set objTemp =Sys.Process("EdgeClient").WPFObject("HwndSource: PopupRoot", "").FindChild("Name",strButton,50,True)
+     If objTemp.Exists Then
+         objTemp.Click
+         log.message "Right click Open Layout is clickied"
+         Delay 5000    
+         Call sCloseWithYes(637)
+         Delay 1000      
+        'Open for View Workspace    
+         Call sOpenForEditOrView(strParameters) 
+         Delay 200
+         Call sCloseSWV()    
+         Call sEdgeProcessor()
+         Delay   15000 , "Please wait form is loading "
+    Else
+        strTCRemarks = "Not able to find Open Layout button on rightclick "
+        strTestCaseResult = "Fail" 
+        log.Message "Not able to find Open Layout button on rightclick"
+        Exit Sub    
+     End if  
+    End If
+    
+    If strRightClickOption <> "Yes" Then 
+     If (strCategory ="Source" Or strCategory ="Layout") Then
+     Set objGrid=  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl")
+     'Click on Open Layout Button from module
+     Call objGrid.ClickCell(0, "Series Id")   
+     Call sSeries_Search_Delay()
+     Delay 2000
+     Call sObjClick(strButton)
+     Call sEdgeProcessor()
+     Delay 5000    
+    'Close the Layoutseries window
+     Call sCloseWithYes(637)
+     Delay 1000      
+     'Open for View Workspace    
+     Call sOpenForEditOrView(strParameters) 
+     Delay 200
+     Call sCloseSWV()    
+     Call sEdgeProcessor()
+     Delay   15000 , "Please wait form is loading "
+    End If
+   End If
+   
+    If strCategory ="STP" Then
+      Set objGrid=  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl")
+        Call objGrid.ClickCell(0, "Series Id")
+       Call sSeries_Search_Delay() 
+      'Click on Open STP Button
+       strTemp="WPFObject(""ContentControlEx"", ""Open Global STP"", 2)"
+       Call sObjClick(strTemp)
+       Call sEdgeProcessor()       
+       Delay 2000,"Opening STP.. Pls wait.."
+       Call sExcelFullHistory()
+       Delay 5000
+       Set NetUIHWND = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+       If NetUIHWND.Exists Then 
+         blnFlag = True
+         Call ExcelProcessKill          
+         Call sCloseWithYes(1299)
+         Delay 1000         
+       End If
+    End If
+    If strCategory ="CNSTP"Then
+       Set objGrid=  Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl")
+       Call objGrid.ClickCell(0, "Series Id") 
+       Call sSeries_Search_Delay()
+       
+      'Click on Open CNSTP Button
+       strTemp="WPFObject(""ContentControlEx"", ""Open CN STP"", 2)"
+       Call sObjClick(strTemp)
+       Call sEdgeProcessor()       
+       Delay 2000,"Opening STP.. Pls wait.."
+       Call sExcelFullHistory()
+       Delay 2000
+       blnFlag = fVerifyCNSTPFile(strTestDataFile, STPSheetName) 
+       Call ExcelProcessKill  
+       Call sCloseWithYes(1299)
+       Delay 1000   
+    End If
+    
+    If strCategory = "Layout" Then 
+      'Expand all
+      'strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"
+      'Call sObjClick(strTemp)
+      Call Aliases.EdgeClient.HwndSource_Shell.Shell.Grid.ContentControl.Grid.PART_RibbonLayout.Part_WindowContent.Grid.ContentControl.PART_ContainerContent.BarManager.DockPanel.DockLayoutManager.LayoutGroup.LayoutPanel.LayoutPanelContentPresenter.Root.BarManager.ClickItem("[0]|Expand All")
+      Call sEdgeProcessor()
+      Set objTemp= Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("DockPanel", "", 3).WPFObject("LayoutTreeListControl").WPFObject("LayoutTreeListView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 4).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WPFObject("InplaceBaseEdit", "", 1).WPFObject("EditorControlStub", "", 1)
+      objTemp.Click
+      Delay 2000
+      'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("LayoutSeriesViewControl").WPFObject("BarManager", "", 1).WPFObject("DockPanel", "", 1).WPFObject("LayoutSeriesGridControl")
+      strTemp = "WPFObject(""LayoutSeriesGridControl"")"
+      Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+      intRowCount = objTemp.DataContext.Count
+      For IntI = 0 to intRowCount-1
+         ActualSeriesID = objTemp.DataContext.Item(IntI).SeriesId
+         If (strSeriesID) = ActualSeriesID then         
+            blnFlag = True
+            Call sCloseSWV() 
+            Exit For
+         End If      
+      Next
+    End If
+    
+    If strCategory = "Source" Then      
+           strTemp = "WPFObject(""ContentControlEx"", ""Expand All"", 2)"   
+           Call sObjClick(strTemp)
+           strTemp="WPFObject(""SourceTreeListView"")"  
+           Set objGridControl = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)    
+           objGridControl.Nodes_2.Item(0).Nodes.Item(0).Nodes.Item(0).ExpandAll      
+          intRow =objGridControl.Nodes_2.Item(intI).Nodes.Item(intJ).Nodes.Item(intK).get_RowHandle
+          objGridControl.Keys "^[Home]"
+          Call objGridControl.ClearSelectionCore
+          Call objGridControl.FocusViewAndRow(objGridControl,intRow)
+          objGridControl.SetFocusOnCurrentItem
+          Call objGridControl.SelectRowCore(intRow)    
+          Call sEdgeProcessor()
+          Delay 2000
+          'Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", "Edge ( US Integration )").WPFObject("Shell", "Edge ( US Integration )", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("SourceSeriesViewControl").WPFObject("BarManager", "", 1).WPFObject("DockPanel", "", 1).WPFObject("SourceSeriesGridControl")       
+          'strTemp= .WPFObject("SourceSeriesGridControl")   
+          'Set objTemp = Sys.Process("EdgeClient").FindChild("Name",strTemp,50,True)
+          Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("AdornerDecorator", "", 1).WPFObject("AdornedControl", "", 1).WPFObject("Grid", "", 1).WPFObject("SourceSeriesViewControl").WPFObject("BarManager", "", 1).WPFObject("DockPanel", "", 1).WPFObject("SourceSeriesGridControl")
+          intRowCount = objTemp.DataContext.Count
+          For IntI = 0 to intRowCount-1
+            ActualSeriesID = objTemp.DataContext.Item(IntI).SeriesId
+            If Trim(strSeriesID) = Cstr(Trim(ActualSeriesID)) then         
+              blnFlag = True
+              Call sCloseSWV() 
+              Exit For
+            End If       
+          Next  
+      End If
+   
+    
+    If blnFlag = True Then 
+      strTCRemarks = strText & strSeriesID  & " is Opened "
+      strTestCaseResult = "PASS" 
+      log.Message strText & strSeriesID  & " is Opened "
+    Else
+      Call sCloseSWV() 
+      strTCRemarks = strText & strSeriesID  & " is not Opened "
+      strTestCaseResult = "PASS" 
+      log.Message strText & strSeriesID  & " is not Opened "     
+    End IF    
+ 
+  Set objTemp = Nothing  
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sSearchSeries', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+
+'#######################################################################################################333
+'Click on Sereis Series Button
+Sub SearchSeriesOption(strOption)
+  on Error Resume Next
+  Dim strTemp, objTemp
+  
+  strTemp = "WPFObject(""ContentControl"", ""Series"", 1)"
+  Call sObjClick(strTemp)  
+  'Call SClosesource()
+     
+  Select Case strOption
+         Case "Reference"
+              strTemp = "WPFObject(""ContentControlEx"", ""Search for Reference"", 2)"              
+         Case "Layout"
+               strTemp = "WPFObject(""ContentControlEx"", ""Search on Layout"", 2)" 
+         Case Else
+              strTemp = "WPFObject(""ContentControlEx"", ""Search on Source Tree"", 2)"
+              
+        ' Case "Source"              
+'        ' Case "STP"
+'              strTemp = "WPFObject(""ContentControlEx"", ""Search on Source Tree"", 2)"
+'         Case "CNSTP"
+'              strTemp = "WPFObject(""ContentControlEx"", ""Search on Source Tree"", 2)"
+  End Select
+  
+  Call sobjClick(strTemp)
+  Delay 5000 , "Please wait for is loading"
+  Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1)
+  log.message objTemp.ActualCaption + " Window is Opened"  
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'SearchSeriesOption', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Sub
+'*********************************************************************************************************************
+
+Sub sSeries_Search_Delay1()
+
+  On Error Resume Next
+  Dim objEdgeWait,strTemp,objTemp
+  Set objCell =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WaitChild("WPFObject(""InplaceBaseEdit"", """", 1)",60000)
+  strTemp = "WPFObject(""GridControl"")"
+  Set objTemp=  Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)  
+  Call objTemp.ClickCell(0, "Series Id")    
+  Do until objTemp.get_CurrentCellValue <> ""      
+      Delay 1000,"Pls Wait... Form is loading..." 
+      Set objCell =Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).WPFObject("RowControl", "", 1).WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 1).WaitChild("WPFObject(""InplaceBaseEdit"", """", 1)",60000)
+      if objCell.Exists Then 
+        Call objTemp.ClickCell(0, "Series Id") 
+        Exit Do
+      End If
+  Loop   
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sSeries_Search_Delay', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If      
+End Sub
+'*********************************************************************************************************************
+
+Sub sSeries_Search_Delay(strSeriesID)
+
+  On Error Resume Next
+  Dim objEdgeWait,strTemp,objTemp 
+  Delay 5000, "Please Wait" 
+  For J= 0 to 3
+      strTemp = "WPFObject(""RowControl"", """", 1)"
+      If Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_SERIESSEARCH_PRT_01")) Then
+           Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).Waitchild(strTemp,600000)
+      Else          
+        Set objTemp = Sys.Process("EdgeClient").WPFObject("HwndSource: Shell", ""& strEnvi &"").WPFObject("Shell", ""& strEnvi &"", 1).WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("PART_RibbonLayout").WPFObject("Part_WindowContent").WPFObject("Grid", "", 1).WPFObject("ContentControl", "", 1).WPFObject("PART_ContainerContent").WPFObject("BarManager").WPFObject("DockPanel", "", 1).WPFObject("DockLayoutManager").WPFObject("LayoutGroup", "", 1).WPFObject("LayoutPanel", "", 1).WPFObject("LayoutPanelContentPresenter", "", 1).WPFObject("Root").WPFObject("BarManager", "", 1).WPFObject("Grid", "", 1).WPFObject("GridControl").WPFObject("GridView").WPFObject("HierarchyPanel", "", 1).Waitchild(strTemp,600000) 
+      End If
+        if objTemp.Exists then
+          'Set objCell = objTemp.WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2).WPFObject("InplaceBaseEdit", "", 1)
+          Set objCell = WPFObject("CellsControl", "", 1).WPFObject("LightweightCellEditor", "", 2)
+          For I = 0 to 90 
+            If objCell.Content.DisplayText = strSeriesID Then 
+              objCell.Click
+              Delay 2000,"Loading..."
+              Exit For
+            Else
+              Delay 1000, "Please Wait Form is Loading"
+            End If
+          Next
+      End If
+  Next  
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sSeries_Search_Delay()'function , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+'*****************************************************************************************************************************
+Function fVerifyCNSTPFile(strTestDataFile, STPSheetName)
+   On Error Resume Next
+  
+  Dim strTemp, objTemp, NetUIHWND, blnFlag1,blnFlag2
+  
+  objArray = Sys.FindAllChildren("ProcessName","EXCEL", 1,True)
+  For i=0 to ubound(objArray)
+    log.Message objArray(i).FullName
+    set oSTP_ExcelObj = objArray(i).FindChild("WndCaption", "*" & strTestDataFile & "*",1,True)
+    If oSTP_ExcelObj.Exists = True Then
+      strAliasName=objArray(i).mappedname
+      strFileName=oSTP_ExcelObj.WndCaption
+      If instr(strFileName,"Microsoft Excel")>0 then
+        strFileName=GetFileName(strFileName,"Microsoft Excel")
+      Else
+        strFileName=GetFileNameExcel13(strFileName," - Excel")
+      End If
+      FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")
+      FilePath=FilePath & "\" & iif(instr(strFileName,"xlsx") > 0,strFileName,strFileName & ".xlsx")  
+      log.Message FilePath
+      Exit For
+    Else
+      log.Message "STP file not found in " & objArray(i).FullName
+    End If
+  Next
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+  
+    With .WorkSheets(STPSheetName)      
+        lastColumn=.UsedRange.Columns.Count 
+         For inti = 1 to lastColumn
+          strText=.Cells(2,inti)
+          If UCASE(strText)=UCase("Source Name [Eng]") then 
+            fVerifyCNSTPFile = True
+            Exit For
+           End If
+          Next
+    End With
+  End With 
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fVerifyCNSTPFile', Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If   
+End Function

@@ -1,0 +1,1783 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT To_Do_Panel
+
+
+''**************************************************************
+'Start    : All STP Related script will be written in this unit
+'Start Date    : 02/06/2020
+'Created by: Chethana S R
+'************************************************************** 
+
+'***************************************************************************************************************************
+'Function to Select the Required Folder and Open STP file
+
+Sub fOpenSTP(strParameters)
+
+  On Error Resume Next
+  Dim strTemp, objTemp, IntRowNumber(4)
+  
+  strLevel1 =getSplitValue(strParameters,"Level1")
+  strLevel2 =getSplitValue(strParameters,"Level2")
+  strLevel3 =getSplitValue(strParameters,"Level3")
+  
+  
+'  strLevel1 = "Test"
+'  strLevel2 = "Automation_UIT4_1"
+'  strLevel3 = "ProjectTeam_STP"
+  
+  'Open Source Module
+   Call sHome_Source()
+   
+  'Select Level3 source
+  strTemp = "WPFObject(""SourceTreeListView"")"    
+  IntRowNumber(0) = fGridone(strTemp,strLevel1 )
+  IntRowNumber(1) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(0))  
+  IntRowNumber(2) = fGridThree(strTemp,strLevel3 ,IntRowNumber(0), IntRowNumber(1))  
+  Call sEdgeProcessor() 
+  
+  Delay 5000
+  
+  'Click on "Open global STP 
+  strTemp= "WPFObject(""ContentControlEx"", ""Open Global STP"", 2)"  
+  Call sObjClick(strTemp)
+  
+  
+  'Click on Excel Timpoint
+  Call fTimpoint_range_selection(2)
+  
+  'Select the Frequency and click ok on warning message
+  Call fSelectFrequency(2)
+  Delay 200
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'fOpenSTP' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+    
+End Sub
+'***************************************************************************************************************************
+
+'Testcase:TC_STP_PRT04: Create Series And Verify 
+Sub sCreatAndVerifySeries(strParameters)
+'Sub sCreatAndVerifySeries()
+
+  On Error Resume Next
+  
+  Dim strTestDataFile
+  
+   strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  'strTestDataFile ="YYY-Automation_UIT4_1-ProjectTeam"
+  
+  'Open the STP File 
+   Call fOpenSTP(strParameters)  
+  
+'  Create Series
+   Call fSeries_Creation(strParameters, strTestDataFile)
+   
+ 'Update STP
+  Call fUpdate_STP(strTestDataFile)
+  
+  ''Verify the Created Series
+  Call sVerifySeries(strParameters)
+  
+  
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sCreatAndVerifySeries' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+    
+  
+End Sub
+
+'**********************************************************************************************************************88
+'Verify Created Series
+
+Sub sVerifySeries(strParameters)
+'Sub sVerifySeries()
+
+  On Error Resume Next
+  
+  Dim strTestDataFile, STPSheetName, strSeriesName, strSourceSeriesName, strSeriesSourceCode,strForeCast
+  Dim strSeriesStatus, strSeriesType, strSeriousCountry, strExcelNumber, strAddTimepoint,strTimepoints,strOutputUnit
+  Dim strSeriesNature,strSeriesFreq,strSourceUnit,strUnitType,intlastRow,lastColumn,blnFlag
+  Dim StrSeriesId
+  blnFlag = False
+  
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")
+  strSeriesName = getSplitValue(strParameters,"Series Name")
+  strSourceSeriesName = getSplitValue(strParameters,"Source Series Name")
+  strSeriesSourceCode=  getSplitValue(strParameters,"Series Source Code")
+  strForeCast= getSplitValue(strParameters,"ForeCast")
+  strSeriesStatus =  getSplitValue(strParameters,"Series Status")
+  strSeriesType =  getSplitValue(strParameters,"Series Type")
+  strSeriousCountry = getSplitValue(strParameters,"Serious Country")
+  strOutputUnit=  getSplitValue(strParameters,"Output Unit")
+  strSeriesNature =  getSplitValue(strParameters,"Series Nature")
+  strSeriesFreq = getSplitValue(strParameters,"Series Freq")
+  strSourceUnit =  getSplitValue(strParameters,"Source Unit")
+  strUnitType = getSplitValue(strParameters,"Unit Type") 
+  strTimepoints = getSplitValue(strParameters,"Timepoints")
+  strExcelNumber = getSplitValue(strParameters,"ExcelNumber")
+  strAddTimepoint = getSplitValue(strParameters,"AddTimepoint")
+  
+  If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT06"))Then
+    STPSheetName= getSplitValue(strParameters,"STPSheetName1")
+  End If
+
+'    strTestDataFile="YYY-Automation_UIT4_1-ProjectTeam"
+'    STPSheetName = "A1_1"
+'    strSeriesName="test-series"
+'    strSourceSeriesName="test-series"
+'    strSeriesSourceCode="test-series"
+'    strSeriesStatus="T"
+'    strSeriesType="Key"
+'    strSeriousCountry="YYY"
+'    strOutputUnit="NA"
+'    strSeriesNature="R"
+'    strSourceUnit="NA"
+'    strUnitType="%"    
+'    strForeCast ="No"
+'    strSeriesFreq = "A1"
+
+  
+  
+  FilePath=aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")+ "\"+strTestDataFile +".xlsx"
+  Set objSTPXls=GetObject(FilePath)
+  'objSTPXls.Maximize()
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+    
+    With .WorkSheets(STPSheetName)
+      Dim r
+      r=1
+        delay Status_Wait, "Finding last Row the Excel sheets.. Pls wait.."        
+         Do While (r < .UsedRange.Rows.Count)        
+          If IsEmpty(.UsedRange.Cells(r, 1).Value) = True AND (.UsedRange.Cells(r, 1).Text) ="" Then
+            If IsEmpty(.UsedRange.Cells(r-1, 1).Value) = False AND (.UsedRange.Cells(r-1, 1).Text) <>"" Then                
+               intlastRow = r-1           
+             Exit Do
+            Else
+             r=r-1
+            End If            
+          Else          
+           r = r+100   
+          End  If
+        Loop
+        
+    lastColumn=.UsedRange.Columns.Count  
+    For inti = 3 to lastColumn
+      strText=.Cells(2,inti)
+      .Cells(intlastRow,inti).Select     
+      strValue = Cstr(.Cells(intlastRow,inti).Value) 
+      StrSeriesId=Cstr(.Cells(intlastRow,1).Value)
+      If UCASE(strText)=UCase("Series Name") And strValue= strSeriesName Then 
+        blnFlag = True      
+      ElseIf UCASE(strText)=UCase("Source Series Name") And strValue =strSourceSeriesName then 
+        blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Series Source Code") And strValue=strSeriesSourceCode then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("ForeCast") And strValue=strForeCast then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Series Status") And strValue=strSeriesStatus then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Series Type") And strValue=strSeriesType then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Series Country") And strValue=strSeriousCountry then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Output Unit") And strValue=strOutputUnit then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Series Nature") And strValue=strSeriesNature then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Series Freq") And strValue=strSeriesFreq then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Source Unit") And strValue=strSourceUnit then 
+         blnFlag = True  
+      ElseIf UCASE(strText)=UCase("Unit Type") And strValue=strUnitType then  
+         blnFlag = True  
+      ElseIf isDate(strText)  then
+          strStartcolumn=inti
+          Exit For
+      End if 
+      If  blnFlag = False Then 
+       Exit for
+      End If
+    Next 
+    End With
+  End With 
+  
+  If blnFlag = True Then 
+    strTCRemarks = "The Series with series Id :" &StrSeriesId & " Sucessfully Created and Verifyied"
+    log.message strTCRemarks
+    strTestCaseResult = "PASS"
+    Err.Clear()
+  Else
+     strTCRemarks = "The Series with series Id :" &StrSeriesId & " is not Created  as expected"
+    log.message strTCRemarks
+    strTestCaseResult = "FAIL"
+  End If
+  
+   'Refresh STP
+  Call sClickRefresh(2,strTestDataFile)
+  Delay 2000               
+  Call sExcelFullHistory()
+  
+  
+  'msgbox (strTCRemarks)
+  'msgbox (strTestCaseResult)
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sVerifySeries' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+  
+End Sub
+
+''***************************************************************************************************************************
+
+'Testcase:TC_STP_PRT01: Check for insert data(TP) and Upload
+
+Sub sTPValidation(strParameters)
+  On Error Resume Next
+  
+  Dim strTestDataFile, nLastRow, lastColumn, FilePath, objSTPXls, STPSheetName, strStartcolumn, intlastRow
+  Dim sUpdated_Value,strValue, blnFlag, strText
+  
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile")     
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")
+  strTimepoints = getSplitValue(strParameters,"Timepoints")
+  strTimepoints1 = strTimepoints
+  'strTestDataFile ="YYY-Automation_UIT4_1-ProjectTeam"
+  blnFlag = False
+  
+  'Open the STP File 
+   'Call fOpenSTP(strParameters)  
+'    If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT03"))Then  
+'      Call sDeleteTimepoints(strParameters)
+'      Exit Sub 
+'    End If
+   intlastRow =  fLastRow(strTestDataFile, STPSheetName)
+   
+   FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+
+    With .WorkSheets(STPSheetName)
+      lastColumn=.UsedRange.Columns.Count
+      'Insert TP value for an exsiting series
+      intlastRow = intlastRow-1
+       For inti = 3 to lastColumn
+          strText=.Cells(2,inti)
+          .Cells(intlastRow,inti).Select
+           If isDate(strText)  then
+              strStartcolumn=inti
+              strStartcolumn1 = inti
+              .Cells(intlastRow,inti).select
+              'Insert a Timepoint
+              If  Ucase(Trim(strTestCase_No)) = Ucase(Trim("TC_STP_PRT01"))Then
+                intcount=0
+                For intj= (strStartcolumn + 1) to lastColumn 
+                  If IsEmpty(.UsedRange.Cells(intlastRow, intj).Value) = True AND (.UsedRange.Cells(r, intj).Text) ="" Then
+                    if intcount<=5 then
+                      .Cells(intlastRow,intj).select
+                      .Cells(intlastRow,intj).Value=strTimepoints
+                      strTimepoints=strTimepoints + 1
+                    Else
+                      Exit For
+                    End if 
+                    intcount=intcount+1 
+                  End If  
+                Next                
+              End If
+              ' Revise the Existing Timepoint
+              If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT02"))Then
+                  strValue = .Cells(intlastRow,(strStartcolumn + 1)).Value
+                  sUpdated_Value = strTimepoints+strValue
+                  .Cells(intlastRow,(strStartcolumn + 1)).Value=sUpdated_Value      
+              End If           
+                     
+              Exit For
+           End if             
+        Next
+        
+       'Upload_STP
+       Call fUpdate_STP(strTestDataFile) 
+       Delay 500
+       
+       'Verify the Inserted Timepoint
+       If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT01"))Then
+          intcount=0
+          strStartcolumn = strStartcolumn1
+          strTimepoints = strTimepoints1
+          For intj= (strStartcolumn + 1) to lastColumn     
+              if intcount<=5 then
+                .Cells(intlastRow,intj).select
+                strValue = .Cells(intlastRow,intj).Value
+                If Cint(strValue) = Cint(strTimepoints) Then
+                  blnFlag = True 
+                End If               
+              Else
+                Exit For
+              End if 
+              intcount=intcount+1 
+              strTimepoints=strTimepoints + 1           
+          Next
+          If blnFlag = True Then 
+             strTCRemarks = "TimePoint is Inserted and Validated"
+             log.message strTCRemarks
+             strTestCaseResult = "PASS"
+          Else
+             strTCRemarks = "TimePoint is not Inserted"    
+              log.message strTCRemarks
+               strTestCaseResult = "FAIL"
+          End If
+   
+       End If
+        'Verify the Revised Timepoint
+        If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT02"))Then
+             .Cells(intlastRow,strStartcolumn+1).select
+             strValue1 = .Cells(intlastRow,strStartcolumn+1).Value
+             'Validate the Revised Value     
+             If  Cint(strValue1) = Cint(sUpdated_Value) Then
+                 strTCRemarks = "The Timepoint is sucessfully updated from '" & strValue & "' To '" & strValue1 &"' "
+                 log.message strTCRemarks
+                 strTestCaseResult = "PASS"
+             Else
+                 strTCRemarks = "The Timepoint is not updated"
+                 log.message strTCRemarks
+                 strTestCaseResult = "FAIL"             
+            End If   
+        End If           
+    End With
+  End With
+  
+ ' msgbox strTCRemarks
+  'msgbox strTestCaseResult
+  
+ 'Close STP File
+  'Call ExcelProcessKill() 
+  
+  
+  If Err.Number > 0 Then
+    Log.Warning("Error in sTPValidation, Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If
+   
+End Sub
+
+'*********************************************************************************************************************************
+'Function to Find the LAST Row
+
+Function fLastRow(strTestDataFile, STPSheetName)
+
+  On Error Resume Next
+  
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+
+    With .WorkSheets(STPSheetName)
+      Dim r
+        delay Status_Wait, "Finding last Row the Excel sheets.. Pls wait.."
+        For r = 1 To .UsedRange.Rows.Count
+          If IsEmpty(.UsedRange.Cells(r, 1).Value) = True AND (.UsedRange.Cells(r, 1).Text) ="" Then           
+           intlastRow=r           
+           Exit For
+          End  If 
+        Next
+      End with 
+    End With 
+  fLastRow = intlastRow        
+  
+End Function
+
+'***********************************************************************************
+
+Function fUpdate_STP(strTestDataFile)
+  on Error Resume Next
+   Delay 200  
+  'Upload STP 
+  Call sClickUpload(2,strTestDataFile)  
+  Delay 200
+  'Click No on Information window
+  Call sClickonInformation(2,"No")
+  Delay 200
+  'Refresh STP
+  Call sClickRefresh(2,strTestDataFile)
+  Delay 2000               
+  Call sExcelFullHistory()
+End Function
+
+'*************************************************************************************************
+'Tc TC_STP_PRT05 " Amend series Information"
+Sub sAmend_Series(strParameters)
+
+On Error Resume Next
+
+  Dim strTestDataFile, STPSheetName, strTimepoints, FilePath, objSTPXls, intlastRow
+
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile")     
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")
+  
+  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"
+  
+  
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)
+  intlastRow = intlastRow-1
+  
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With   
+
+    With .WorkSheets(STPSheetName)
+    
+    'Amende Series_information    
+       .Cells(intlastRow,3).Select
+        strText = .Cells(intlastRow,3).Value
+        strValue = aqConvert.VarToStr(strText)&"_updated"
+       .Cells(intlastRow,3).Value =strValue
+       
+       'Upload the File       
+       Call fUpdate_STP(strTestDataFile)
+       
+       'Verify Amended Value
+       .Cells(intlastRow,3).Select
+       If .Cells(intlastRow,3).Value = strValue Then
+         strTCRemarks = "Series info fields is updated from '"& strText&"' to '"& strValue& "'"
+         log.message strTCRemarks
+         strTestCaseResult = "PASS" 
+       Else
+         strTCRemarks = "Series info fields is not updated"
+         log.message strTCRemarks
+         strTestCaseResult = "FAIL"        
+        
+       End If   
+    End With
+  End With
+ 
+  If Err.Number > 0 Then
+    Log.Warning("Error in sAmensSeires,  Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+End Sub
+
+'********************************************************************************************************8
+'Click AddFrequency and Set the value
+Sub sClickAddFrequency(strTestDataFile)
+'Sub sClickAddFrequency()
+  On Error Resume Next
+  
+  Dim NetUIHWND, strTemp
+  
+  'strTestDataFile = "YYY-Test_may_05-Test"
+  
+  Set wndXLMAIN = Aliases.EXCEL.wndXLMAIN
+   wndXLMAIN.Activate
+
+  Delay 1000
+  Set NetUIHWND = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+ 
+  strTemp = "MSAAObject(""pt_EDGE"")"
+  Set objEdge = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objEdge.Click()
+  
+  'click on Add Frequency 
+   strTemp = "MSAAObject(""btn_Add_Frequency"")"
+   Set objFre = NetUIHWND.FindChild("Name",strTemp,50,True)
+   Call objFre.Click()
+   Delay 2000
+   
+   'set value
+   Set objTemp = Sys.Process("EXCEL", 2).WinFormsObject("SelectFreqForm").WinFormsObject("cmbFreq")
+   Call objTemp.ClickItem("Daily, ""Everyday""")
+   
+   'click ok button
+  
+   Delay 500 
+   Set objTemp = Sys.Process("EXCEL", 2).WinFormsObject("SelectFreqForm").WinFormsObject("radButton1")
+   Call objTemp.Click()
+   
+End Sub
+'*********************************************************************************************************88
+''Tc TC_STP_PRT06 " Check for the function 'Add Frequency'
+Sub sVerify_AddFrequency(strParameters)
+  
+    strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+
+  On Error Resume Next
+  
+  'Add Frequency 
+  
+  Call sClickAddFrequency(strTestDataFile)
+  
+  Delay 5000, "Please Wait to Add Frequncy"
+  'Create Series
+  Call sCreateSeries(strParameters)
+  
+  'Verify Created Series
+  Call sVerifySeries(strParameters)
+  
+  
+   If Err.Number > 0 Then
+    Log.Warning("Error in sVerify_AddFrequency  Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If 
+  
+End Sub
+'**********************************************************************************************************************88
+''Tc TC_STP_PRT06_07" Check for the function Add Date'
+
+Sub sAddDate_Validation(strParameters)
+'Sub sAddDate_Validation()
+
+  On Error Resume Next
+  
+  Delay 2000
+  Dim strTestDataFile, STPSheetName, strTimepoints, FilePath, objSTPXls, intlastRow, lastColumn, objTemp
+  dim strStartcolumn
+
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile")     
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")
+  strTimepoints = getSplitValue(strParameters,"Timepoints")
+  
+  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"
+'  strTimepoints = 5
+
+  'Open the STP File 
+  ' Call fOpenSTP(strParameters)  
+  
+  
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)
+  strStartcolumn = fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+ ' msgbox strStartcolumn
+  intlastRow = intlastRow-1
+  
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With   
+
+    With .WorkSheets(STPSheetName)
+      'Find the Column count
+      lastColumn=.UsedRange.Columns.Count
+     'msgbox lastColumn
+    
+      'click on Add Date 
+       Call  sClick_AddDate(strTestDataFile)
+       'Select Future Button 
+       Set objTemp = Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("panel10").WinFormsObject("tableLayoutPanel3").WinFormsObject("futureButton") 
+       Call objTemp.Click()
+       Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("tableLayoutPanel2").WinFormsObject("okButton").Click
+       Call sEdgeProcessor()
+       Delay 15000, "Please wait till page loades"
+       
+       strValue = .Cells(intlastRow,strStartcolumn).Value
+       .Cells(intlastRow,strStartcolumn).Value = strValue+10
+       .Cells(intlastRow,strStartcolumn+1).Value = 5
+      
+          ''Mark Good    
+          With objSTPXls
+            With .WorkSheets(STPSheetName)
+                 .Cells.Select
+            End With
+          End With
+          
+      'Click on Mark good
+      Call sClicKMarkGood(2,strTestDataFile)
+       
+       
+        Delay 5000
+       'Update STP
+        Call fUpdate_STP(strTestDataFile)
+        
+       'Validate the Values added to future Date
+       strText = aqConvert.VarToStr(.Cells(intlastRow,strStartcolumn+1).Value)      
+       If  strText =  aqConvert.VarToStr(strValue+10) then 
+         strTCRemarks = "Future date and Corresponding TP value is sucessfully added "
+         log.message strTCRemarks
+       Else
+         strTCRemarks = "Future date and Corresponding TP value is not added sucessfully "
+         log.message strTCRemarks         
+       End If
+      ' msgbox strTCRemarks
+       'click on Add Date 
+       Call  sClick_AddDate(strTestDataFile)
+       'Select Past Button 
+       Set objTemp = Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("panel10").WinFormsObject("tableLayoutPanel3").WinFormsObject("pastButton")
+       Call objTemp.Click()
+       Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("tableLayoutPanel2").WinFormsObject("okButton").Click
+       Call sEdgeProcessor()
+       Delay 15000, "Please wait till page loades"      
+       strValue = .Cells(intlastRow,lastColumn+3).Value
+       .Cells(intlastRow,lastColumn+3).Value = strValue+3      
+       
+          ''Mark Good    
+          With objSTPXls
+            With .WorkSheets(STPSheetName)
+                 .Cells.Select
+            End With
+          End With
+          
+      'Click on Mark good
+      Call sClicKMarkGood(2,strTestDataFile)
+       
+       'Update STP
+        Call fUpdate_STP(strTestDataFile)
+        
+       'Validate the Values added to Past Date
+       strText = aqConvert.VarToStr(.Cells(intlastRow,lastColumn+3).Value)
+       If  strText =  aqConvert.VarToStr(strValue+3) then 
+         strTCRemarks = strTCRemarks & "<br />" &"Past date and TP Value is added"
+         log.message strTCRemarks
+       Else
+         strTCRemarks = strTCRemarks & "<br />" & "Past date and TP Value is not added"
+         log.message strTCRemarks         
+       End If  
+      ' msgbox strTCRemarks
+        
+
+      'Add Date Rage and Update the TP for Correspoinding Date 
+       Call  sClick_AddDate(strTestDataFile)  
+       'Enter the Date Range
+       Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("panel10").WinFormsObject("tableLayoutPanel3").WinFormsObject("fromButton").Click()
+       Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("panel10").WinFormsObject("tableLayoutPanel3").WinFormsObject("startPicker").Set_Text(DateAdd("yyyy",-1,Date))
+       Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("panel10").WinFormsObject("tableLayoutPanel3").WinFormsObject("endPicker").Set_Text(Date)
+       Delay 1000
+       Sys.Process("EXCEL", 2).WinFormsObject("AddDateForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("tableLayoutPanel2").WinFormsObject("okButton").Click
+       Call sEdgeProcessor()
+       Delay 2000
+       lastColumn=.UsedRange.Columns.Count
+       For inti = 3 to lastColumn
+          strText=.Cells(2,inti)
+          .Cells(intlastRow,inti).Select          
+           If isDate(strText)  then
+              'msgbox strText
+              if Year(strText) = Year(Date)then 
+                     strStartcolumn=inti
+                     Exit For
+              End if              
+           End If           
+       Next
+       strValue = .Cells(intlastRow,strStartcolumn).Value
+       .Cells(intlastRow,strStartcolumn).Value = strValue+2
+       .Cells(intlastRow,strStartcolumn+1).Value = strValue+4
+       Delay 200       
+       
+          ''Mark Good    
+          With objSTPXls
+            With .WorkSheets(STPSheetName)
+                 .Cells.Select
+            End With
+          End With
+          
+      'Click on Mark good
+      Call sClicKMarkGood(2,strTestDataFile)
+       
+'       Update STP
+        Call fUpdate_STP(strTestDataFile)
+        
+       'Validate the Values added to Past Date
+       strText = aqConvert.VarToStr(.Cells(intlastRow,strStartcolumn).Value)
+       strText1 = aqConvert.VarToStr(.Cells(intlastRow,strStartcolumn+1).Value)
+       If  strText =  aqConvert.VarToStr(strValue+2)And  strText1 =  aqConvert.VarToStr(strValue+4)then 
+         strTCRemarks = strTCRemarks & "<br />" &"The Date and Tp values are added in given range"
+         log.message strTCRemarks
+         strTestCaseResult = "PASS" 
+       Else
+         strTCRemarks = strTCRemarks & "<br />" & "The Date and Tp values are not added in given range"
+         log.message strTCRemarks 
+         strTestCaseResult = "FAIL"       
+       End If  
+
+    End with 
+  End With 
+  
+  'msgbox strTCRemarks
+  
+  'Clean Up 
+  'Call ExcelProcessKill()
+  
+  
+  
+End Sub
+'*********************************************************************************************************************
+'click om add Date 
+
+Sub sClick_AddDate(strTestDataFile)
+'Sub sClickAddDate()
+  On Error Resume Next
+ ' strTestDataFile = "YYY-PRT-PRT"
+  
+  Set wndXLMAIN = Aliases.EXCEL.wndXLMAIN
+  wndXLMAIN.Activate
+  Set netUIHWND = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+  
+  strTemp = "MSAAObject(""pt_EDGE"")"
+  Set objEdge = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objEdge.Click()
+ 
+  strTemp ="MSAAObject(""btn_Add_Date"")"
+  Set objAddDate = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objAddDate.Click()  
+  
+End Sub
+'*******************************************************************************************************************
+
+'Function to Find the first Date Column to add TP
+Function fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+
+  On Error Resume Next
+  'dim intlastRow
+  
+  
+  
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+
+    With .WorkSheets(STPSheetName)      
+        
+        lastColumn=.UsedRange.Columns.Count 
+       For inti = 3 to lastColumn
+          strText=.Cells(2,inti)
+          .Cells(intlastRow,inti).Select          
+           If isDate(strText)  then             
+              fStratColumn=inti
+              Exit For
+           End If
+       Next
+      End with 
+    End With 
+End Function
+
+'*******************************************************************************************************************************88
+''Tc TC_STP_PRT06_07" Check for the function Add Date'
+
+Sub sSeries_Remark(strParameters)
+'Sub sSeries_Remark()
+
+On Error Resume Next
+
+  Delay 2000
+  Dim strTestDataFile, STPSheetName, strTimepoints, FilePath, objSTPXls, intlastRow, lastColumn, objTemp
+  dim strStartcolumn
+
+  strTestDataFile = getSplitValue(strParameters,"TestDataFile")     
+  STPSheetName= getSplitValue(strParameters,"STPSheetName")  
+  strRemarks = getSplitValue(strParameters,"Remarks")
+  strExcelNumber= getSplitValue(strParameters,"ExcelNumber")
+  
+  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName= "A1_1"
+'  strRemarks= "Chethana"
+'  strExcelNumber = 2
+  
+  
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)-1
+  'intlastRow = intlastRow-1  
+  
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With   
+
+    With .WorkSheets(STPSheetName)
+      'Select the series 
+      .Cells(intlastRow,3).Select 
+      'click on Series Remaraks
+      Call sClick_SeriesRemarks(strTestDataFile,2 )
+      Delay 3000
+      Set objGrid = Sys.Process("EXCEL", 2).WinFormsObject("RemarksForm").WinFormsObject("tableLayoutPanel1") 
+      
+      'Enter the 'Remarks' and click on 'Save'
+      'Click on Remark Column
+      Set objTemp= Sys.Process("EXCEL", 2).WinFormsObject("RemarksForm").WinFormsObject("tableLayoutPanel1").WinFormsObject("remarkGridView").MSAAObject("table_TelerikWinControlsUIRadGridView_16")
+      Call objTemp.DblClick(303, 28)
+     ' Set objRemark= objTemp.HostedTextBoxBase
+      Call objTemp.Keys(strRemarks)
+      
+      'Click on Save button
+      Set objTemp = objGrid.WinFormsObject("tableLayoutPanel2").WinFormsObject("SaveButton")
+      Call objTemp.Click()
+      
+'      Set objTemp = objGrid.WinFormsObject("remarkGridView").WinFormsObject("HostedTextBoxBase", "", 2)
+'      if objTemp.Enabled = True Then 
+'          ' Call objTemp.ClickCell(0, "Remark") 
+'         objTemp.Click()
+'          Call objTemp.Keys(strRemarks)
+'      Else
+'          Delay 5000, "Wait till Series_Remark column to be enabled "
+'          Call objTemp.ClickCell(0, "Remark") 
+'          Call objTemp.Keys(strRemarks)
+'      End If
+'      Delay 200  
+
+      
+      'Click on 'Upload' and Refresh the file
+      Call fUpdate_STP(strTestDataFile)
+     
+      'Select the same series and click on 'Series Remarks' and verify the uploaded remarks is shown
+      .Cells(intlastRow,3).Select
+       Call sClick_SeriesRemarks(strTestDataFile,2 )
+       Delay 3000
+ 
+      strText = objGrid.WinFormsObject("remarkGridView").wValue(0, 2)
+      'msgbox strText
+      Set objTemp = objGrid.WinFormsObject("tableLayoutPanel2").WinFormsObject("CloseButton")
+      Call objTemp.Click()
+      
+      If strRemarks = strText Then 
+         strTCRemarks = "Series Remarks is uploaded"  
+         log.message strTCRemarks
+         strTestCaseResult = "PASS"
+      Else
+         strTCRemarks = "Series Remarks is not uploaded"  
+         log.message strTCRemarks
+         strTestCaseResult = "FAIL" 
+      End If
+  
+      Set objGrid = Nothing 
+      Set objTemp = Nothing 
+      
+    End With
+  End With 
+End Sub
+
+'**************************************************************************************************************************
+'Click on Series_Remarks Button
+Sub sClick_SeriesRemarks(strTestDataFile,ExcelNumber )
+  
+  Set wndXLMAIN = Aliases.EXCEL.wndXLMAIN
+  wndXLMAIN.Activate
+  Delay 1000  
+  Set NetUIHWND = Sys.Process("EXCEL", ExcelNumber).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", ExcelNumber).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+ 
+  strTemp = "MSAAObject(""pt_EDGE"")"
+  Set objEdge = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objEdge.Click()
+  
+  strTemp = "MSAAObject(""btn_Series_Remarks"")"
+  Set objEdge = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objEdge.Click()  
+  
+End Sub
+
+'**************************************************************************************************************************
+''Tc TC_STP_PRT10" Check  for the function Partial Upload and Quick Chart
+
+Sub sVerify_PartialUpload(strParameters)
+
+On Error Resume Next
+
+  Delay 2000
+  Dim strTestDataFile, STPSheetName, strTimepoints, FilePath, objSTPXls, intlastRow, lastColumn, objTemp
+  dim strStartcolumn
+
+  strTestDataFile = getSplitValue(strParameters,"TestDataFile")     
+  STPSheetName= getSplitValue(strParameters,"STPSheetName") 
+  
+  
+  'strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+
+
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)-1   
+  strStartcolumn =  fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With   
+
+    With .WorkSheets(STPSheetName)
+    
+        'Revise few timepoints and add few new timepoints
+        strValue = .Cells(intlastRow,strStartcolumn+1).Value
+        .Cells(intlastRow,strStartcolumn).Value = strValue+2
+        .Cells(intlastRow,strStartcolumn+1).Value = strValue+5
+        
+        'Click on 'Partial Upload'
+        Call sClickPartialUpload(2,strTestDataFile)   
+        Delay 200
+        
+       If .Cells(intlastRow,strStartcolumn).Value = strValue+2 _
+         And .Cells(intlastRow,strStartcolumn+1).Value = strValue+5 Then 
+         strTCRemarks = "Partial Upload is working as Expected"
+         log.message strTCRemarks
+         strTestCaseResult = "PASS"
+       Else
+         strTCRemarks = "Partial Upload is working not working as Expected"
+         log.message strTCRemarks
+         strTestCaseResult = "FAIL"
+       End IF
+       
+      'SSCheck for the button 'Quick Chart'
+      Call sClickQuickChart(2,strTestDataFile)
+      Set objTemp = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "Quick Chart", 1).Window("MsoWorkPane", "Quick Chart", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("QuickChartPane").WinFormsObject("seriesChart").WinFormsObject("chart1")
+      If objTemp.Exists Then 
+         strTCRemarks = strTCRemarks & "<br />" & "Quick chart is  shown for the timepoints"
+         log.message strTCRemarks
+         strTestCaseResult = "PASS"
+         Call sClickQuickChart(3,strTestDataFile)
+      Else
+         strTCRemarks = strTCRemarks & "<br />" & "Quick chart is not shown for the timepoints"
+         log.message strTCRemarks
+         strTestCaseResult = "FAIL"
+      End If   
+
+    
+    'Check for the function 'Recover Data'
+    strValue = .Cells(intlastRow,strStartcolumn+1).Value 
+       
+    'Select the timepoint value and click on 'Delete Values'
+    .Cells(intlastRow,strStartcolumn+1).Select
+     Call sClickDeletValue(2,strTestDataFile)
+     
+    'Click on 'Recover Data' 
+    .Cells(intlastRow,strStartcolumn+1).Select
+    Call sClickRecoverData(2,strTestDataFile)
+    
+    If .Cells(intlastRow,strStartcolumn+1).Value = strValue Then
+         strTCRemarks = strTCRemarks & "<br />" & "The system is recover the deleted values"
+         log.message strTCRemarks
+         strTestCaseResult = "PASS" 
+    Else
+         strTCRemarks = strTCRemarks & "<br />" & "The system is not recover the deleted values"
+         log.message strTCRemarks
+         strTestCaseResult = "FAIL" 
+    End If
+    
+      End With
+  End With
+End Sub 
+
+'**************************************************************************************************************************
+''Tc TC_STP_PRT14_15:" Check for 'Mark Good' function
+
+Sub sCheck_MarkGood(strParameters)  
+'Sub sCheck_MarkGood()  
+
+On Error Resume Next
+
+  Delay 2000
+  Dim strTestDataFile, STPSheetName, strTimepoints, FilePath, objSTPXls, intlastRow, lastColumn, objTemp, strSeriesID
+  dim strStartcolumn,  radPageView
+
+  strTestDataFile = getSplitValue(strParameters,"TestDataFile")     
+  STPSheetName= getSplitValue(strParameters,"STPSheetName") 
+  
+  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"
+'  strTestCase_no=  "TC_STP_PRT13"
+
+
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)-1   
+  strStartcolumn =  fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With   
+
+    With .WorkSheets(STPSheetName)
+       If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT13"))Then 
+         .Cells(intlastRow,strStartcolumn+2).Value = 0
+         .Cells(intlastRow,strStartcolumn+2).Select   
+              
+         'Click on Mark good
+         Call sClicKMarkGood(2,strTestDataFile)
+         Delay 2000
+        
+        'Click on QC Result 
+        'strTemp = "MSAAObject(""pt_QC_Result"")"
+        'Set objGrid = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView")      
+        'Set objTemp = objGrid.FindChild("Name",strTemp,50,true) 
+        'objTemp.DblClick()
+        
+         'Call Aliases.EXCEL3.wndXLMAIN.EXCEL23.MsoCommandBar.MsoWorkPane.NUIPane.NetUIHWND.NetUICtrlNotifySink.CMMOcxHost.InformationPane.pageView.MSAAObject("pt_QC_Result").DblClick()
+      
+          Set radPageView = Aliases.EXCEL3.wndXLMAIN.EXCEL23.MsoCommandBar.MsoWorkPane.NUIPane.NetUIHWND.NetUICtrlNotifySink.CMMOcxHost.InformationPane.pageView
+          Call radPageView.MSAAObject("pt_QC_Result").Click()
+          Call radPageView.MSAAObject("pt_QC_Result").Click()
+          Delay 3000
+         
+         
+         
+       strTemp = "WinFormsObject(""RadPageViewPage"", ""A1_1"")"
+       Set objTemp = objGrid.WinFormsObject("qcResultPage").WinFormsObject("qcResultNavigation").WinFormsObject("freqPageView").FindChild("Name",strTemp,10,True)
+          
+       If objTemp.Exists = False Then 
+          .Cells(intlastRow,strStartcolumn+2).Select
+            .Cells(intlastRow,strStartcolumn+2).Value = 5
+          strTCRemarks = "Mark good function works correctly"
+          log.message strTCRemarks
+          strTestCaseResult = "PASS"          
+       Else
+           strTCRemarks = "Mark good function is not works correctly"
+           log.message strTCRemarks
+           strTestCaseResult = "FAIL"
+        End If
+       'Call sClickQCResult(2,strTestDataFile)
+        'Upload and Refresh the File 
+        Call fUpdate_STP(strTestDataFile)
+        Exit Sub 
+    End If
+       
+        'Select the Qc failed timepoint [if does not exists , enter 0 into cell'] 
+        strSeriesID = .Cells(intlastRow,1).Value    
+        .Cells(intlastRow,strStartcolumn+2).Value = 0
+        .Cells(intlastRow,strStartcolumn+2).Select
+        
+        
+        
+        'Click on Mark good
+        Call sClicKMarkGood(2,strTestDataFile)
+        Delay 200        
+        .Cells(intlastRow,strStartcolumn+2).Select
+        
+       'Click 'Cancel Mark Good'
+        Call sClicKCancelMarkGood(2,strTestDataFile)
+        Delay 3000
+        
+        'Verify QC_Result Error Message 
+        'Click on QC_Result
+        'strTemp = "MSAAObject(""pt_QC_Result"")"
+        'Set objGrid = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView")       
+        'Set objTemp = objGrid.FindChild("Name",strTemp,50,true) 
+        'objTemp.DblClick()
+         'Call Aliases.EXCEL3.wndXLMAIN.EXCEL23.MsoCommandBar.MsoWorkPane.NUIPane.NetUIHWND.NetUICtrlNotifySink.CMMOcxHost.InformationPane.pageView.MSAAObject("pt_QC_Result").DblClick()
+
+        
+         Set radPageView = Aliases.EXCEL3.wndXLMAIN.EXCEL23.MsoCommandBar.MsoWorkPane.NUIPane.NetUIHWND.NetUICtrlNotifySink.CMMOcxHost.InformationPane.pageView
+         Call radPageView.MSAAObject("pt_QC_Result").Click()
+         Call radPageView.MSAAObject("pt_QC_Result").Click()
+        
+         Delay 3000
+        strTemp = "WinFormsObject(""qcResultGridView"")"
+        Set objGrid = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1)._
+             Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView").WinFormsObject("qcResultPage").WinFormsObject("qcResultNavigation").WinFormsObject("freqPageView").WinFormsObject("RadPageViewPage", "A1_1").WinFormsObject("QCResultGrid").WinFormsObject("pnlMain").FindChild("Name",strTemp,10,True)
+       rCount = objGrid.RowCount
+      For I = 0 to rCount-1
+        If strSeriesID = objGrid.wValue(I,1) Then 
+          If  objGrid.wValue(I,2) = "Zeroes aren't allowed." then 
+            strTCRemarks = "Cancel Mark Good turn the Mark good timepoint back to QC failed timepoint"
+            log.message strTCRemarks            
+            .Cells(intlastRow,strStartcolumn+2).Select
+            .Cells(intlastRow,strStartcolumn+2).Value = 5
+            'Click on Mark good
+            Call sClicKMarkGood(2,strTestDataFile)
+            Call fUpdate_STP(strTestDataFile)
+            strTestCaseResult = "PASS"
+            Exit For
+          Else
+            strTCRemarks = "Cancel Mark Good is not turn the Mark good timepoint back to QC failed timepoint"
+            log.message strTCRemarks
+            strTestCaseResult = "FAIL"
+        End If
+      End If
+    Next    
+      End With
+  End With
+End Sub 
+
+
+'*************************************************************************************************************************************8
+
+ '**************************************************************************************************************************
+''Tc TC_STP_PRT15: Verify for adding timepoint( Internal Remarks ) details
+Sub sInternal_Remarks(strParameters)  
+'Sub sInternal_Remarks()  
+
+On Error Resume Next
+
+  Delay 2000
+  Dim strTestDataFile, STPSheetName, strTimepoints, FilePath, objSTPXls, intlastRow, lastColumn, objTemp, strSeriesID
+  dim strStartcolumn, sResult
+
+  strTestDataFile = getSplitValue(strParameters,"TestDataFile")     
+  STPSheetName= getSplitValue(strParameters,"STPSheetName") 
+  strRemark = getSplitValue(strParameters,"Remark") 
+  sRemarK_Value = ";"&strRemark&";"
+  msgbox 
+  
+  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"
+'  strRemark = "Abhi loves Chethana"
+  
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)-1   
+  strStartcolumn =  fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With  
+   
+    With .WorkSheets(STPSheetName)  
+       strSeriesID =.Cells(intlastRow,1).Value  
+      .Cells(intlastRow,strStartcolumn+2).select
+      .Cells(intlastRow,strStartcolumn+2).Value = 10
+      'Click TimepointDetails
+      Call sTimePointDetailsClick(2, strTestDataFile)
+      'Edit Remarks at Internal Remarks coloumn
+      sResult =   sEdit_InternalRemarks(strParameters,strSeriesID)
+      
+      If InStr(sResult,sRemarK_Value) >0 Then 
+        strTCRemarks = "Internal Remarks is updated: "&strRemark
+         log.message strTCRemarks
+         strTestCaseResult = "PASS" 
+    Else
+         strTCRemarks = "Internal Remarks is not updated to "&strRemark
+         log.message strTCRemarks
+         strTestCaseResult = "FAIL" 
+    End If
+      
+                
+    End With
+  End With
+End Sub 
+
+
+'*************************************************************************************************************************************8
+'Click TimpointDetails
+Sub sTimePointDetailsClick(ExcelNumber, strTestDataFile)
+
+   
+  Dim NetUIHWND, strTemp
+  Set wndXLMAIN = Aliases.EXCEL.wndXLMAIN
+  wndXLMAIN.Activate
+  Delay 1000  
+'  
+'  ExcelNumber = 2
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+
+  Set NetUIHWND =  Sys.Process("EXCEL", ExcelNumber).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+  
+  strTemp = "MSAAObject(""pt_EDGE"")"
+  Set objEdge = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objEdge.Click()
+  
+  
+  strTemp ="MSAAObject(""btn_Timepoint_Details"")"
+  Set objEdge = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objEdge.Click()
+  
+   log.message "Timepoint_Details button is clicked"
+   Delay 200
+  
+End Sub
+'*********************************************************************************************************************************8
+'Edit Internal Remarks
+Function sEdit_InternalRemarks(strParameters, strSeriesID)
+'Function sEdit_InternalRemarks()
+
+
+  Dim radGridView,hostedTextBoxBase
+  strTestDataFile = getSplitValue(strParameters,"TestDataFile")  
+  strRemark = getSplitValue(strParameters,"Remark")  
+  strKey = strRemark&"[Tab]"
+  
+  'strSeriesID ="432287857" 
+  'strRemark= "Appu" 
+  'strKey = strRemark&"[Tab]"
+  'strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+  
+  Set radGridView =   Sys.Process("EXCEL", 2).WinFormsObject("TPDetailsForm").WinFormsObject("mainPanel").WinFormsObject("gridView")
+  'Call radGridView.MSAAObject("table_TelerikWinControlsUIRadGridView_211").MSAAObject(strCell_1).MSAAObject(strCell_2).Click()
+  Call radGridView.MSAAObject("table_TelerikWinControlsUIRadGridView_211").MSAAObject("row_Row_1_Column_Series_ID_Value_"&strSeriesID).MSAAObject("cell_Row_1_Column_Series_ID_Value_"&strSeriesID&"_5").Click()
+  Delay 100
+  strTemp = "WinFormsObject(""HostedTextBoxBase"", """", 3)"
+  Set objTemp = Sys.Process("EXCEL", 2).FindChild("Name",strTemp,50,True)
+  objTemp.Keys(strKey)
+  log.message("Internal Remark is Edited")
+  'Click on Save Button
+  Set objSave = Sys.Process("EXCEL", 2).WinFormsObject("TPDetailsForm").WinFormsObject("mainPanel").WinFormsObject("buttonPanel").WinFormsObject("saveButton").MSAAObject("btn_Save")
+  Call objSave.Click()
+  log.Message("Save button is Clicked")
+  
+  'Verify Edited Value
+  'Click on Timepoint Deatils
+  Call sTimePointDetailsClick(2, strTestDataFile)
+  
+  Set radGridView =   Sys.Process("EXCEL", 2).WinFormsObject("TPDetailsForm").WinFormsObject("mainPanel").WinFormsObject("gridView")
+  Set objTemp = radGridView.MSAAObject("table_TelerikWinControlsUIRadGridView_211").MSAAObject("row_Row_1_Column_Series_ID_Value_"&strSeriesID).MSAAObject("cell_Row_1_Column_Series_ID_Value_"&strSeriesID&"_5")
+  
+  PropValue = aqObject.GetPropertyValue(objTemp, "Description")
+  sEdit_InternalRemarks = PropValue
+  
+  Set objCancel = Sys.Process("EXCEL", 2).WinFormsObject("TPDetailsForm").WinFormsObject("mainPanel").WinFormsObject("buttonPanel").WinFormsObject("cancelButton").MSAAObject("btn_Cancel")
+  Call objCancel.Click()
+  log.Message("Cancel button is Clicked")
+  
+  'Update the STP
+  Call fUpdate_STP(strTestDataFile)
+  
+End Function
+
+'*********************************************************************************************************************************8
+'Testcase:TC_STP_PRT16: Check for the button 'Series Information'
+Sub sSeries_Information_Verification(strParameters)
+'Sub sSeries_Information_Verification()
+  
+  On Error Resume Next
+  
+  Dim strTestDataFile, STPSheetName, strSeriesName, strSourceSeriesName, strSeriesSourceCode,strForeCast
+  Dim strSeriesStatus, strSeriesType, strSeriesCountry, strExcelNumber, strAddTimepoint,strTimepoints,strOutputUnit
+  Dim strSeriesNature,strSeriesFreq,strSourceUnit,strUnitType,intlastRow,lastColumn,blnFlag
+  Dim StrSeriesId, strStartDate,strEndDate
+  
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName=getSplitValue(strParameters,"STPSheetName") 
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"
+  
+  
+  
+  'Get the last Row information
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)-1   
+  'strStartcolumn =  fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  Delay(2000)
+  
+  
+  Set objSTPXls=GetObject(FilePath)
+  'objSTPXls.Maximize()
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+    With .WorkSheets(STPSheetName)
+    lastColumn=.UsedRange.Columns.Count
+    For inti = 1 to lastColumn
+      strText=.Cells(2,inti)
+      .Cells(intlastRow,inti).Select
+      If UCASE(strText)=UCase("Series ID") Then 
+          StrSeriesId = aqConvert.FloatToStr(.Cells(intlastRow,inti).Value)          
+      ElseIf UCASE(strText)=UCase("Series Name") Then 
+         strSeriesName = .Cells(intlastRow,inti).Value
+      ElseIf UCASE(strText)=UCase("Source Series Name")  Then 
+          strSourceSeriesName  = .Cells(intlastRow,inti).Value   
+      ElseIf UCASE(strText)=UCase("Series Country")  Then  
+       strSeriesCountry= .Cells(intlastRow,inti).Value
+      ElseIf UCASE(strText)=UCase("Series Freq") Then 
+           strSeriesFreq = .Cells(intlastRow,inti).Value
+      ElseIf UCASE(strText)=UCase("Source Unit")  Then
+          strUnitType=  .Cells(intlastRow,inti).Value
+      ElseIf UCASE(strText)=UCase("Unit Type") Then 
+          strSourceUnit= .Cells(intlastRow,inti).Value
+      ElseIf UCASE(strText)=UCase("Start Date") Then 
+          strStartDate= aqConvert.DateTimeToStr(.Cells(intlastRow,inti).Value)
+      ElseIf UCASE(strText)=UCase("End Date") Then 
+          strEndDate= aqConvert.DateTimeToStr(.Cells(intlastRow,inti).Value)       
+      End If
+    Next
+    
+   'Click on Series_Information  
+   Call sClickSeries_information(2,strTestDataFile)    
+   Set objGrid = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView").WinFormsObject("seriesInfoPage").WinFormsObject("seriesInformationView").WinFormsObject("tableLayoutPanel1")
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel4").WinFormsObject("seriesIDLabel")
+   SeriesId_Value = aqObject.GetPropertyValue(objTemp, "Text") 
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel3").WinFormsObject("seriesName")
+   SeriesName_Value = aqObject.GetPropertyValue(objTemp, "Text") 
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel3").WinFormsObject("seriesNameLocal")
+   SourceSeriesName_Value = aqObject.GetPropertyValue(objTemp, "Text")    
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel4").WinFormsObject("seriesCountryLabel")
+   SeriesCountry_Value = aqObject.GetPropertyValue(objTemp, "Text") 
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel4").WinFormsObject("freqLabel")
+   SeriesFreq_Value = aqObject.GetPropertyValue(objTemp, "Text")    
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel4").WinFormsObject("unitTypeLabel")
+   SourceUnit_Value = aqObject.GetPropertyValue(objTemp, "Text") 
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel4").WinFormsObject("sourceUnitLabel")
+   UnitType_Value= aqObject.GetPropertyValue(objTemp, "Text") 
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel5").WinFormsObject("timePointStartDate")
+   StartDate_Value = aqObject.GetPropertyValue(objTemp, "Text") 
+   Set objTemp = objGrid.WinFormsObject("tableLayoutPanel5").WinFormsObject("timePointEndDate")
+   EndDate_Value = aqObject.GetPropertyValue(objTemp, "Text") 
+   
+   If StrSeriesId = SeriesId_Value And strSeriesName= SeriesName_Value And  strSourceSeriesName= SourceSeriesName_Value And _
+      strSeriesCountry = SeriesCountry_Value And strSeriesFreq = SeriesFreq_Value And _
+      strUnitType =  UnitType_Value And strSourceUnit = SourceUnit_Value And _
+      strStartDate = StartDate_Value And strEndDate= EndDate_Value Then
+      
+             strTCRemarks = "All 'Series Information' feilds are verified"
+             log.message strTCRemarks
+             strTestCaseResult = "PASS" 
+  Else
+             strTCRemarks = "All 'Series Information' feilds are not correct"
+             log.message strTCRemarks
+             strTestCaseResult = "FAIL"   
+     
+   End If
+   
+   'Click again Series Information Tab
+    Call sClickSeries_information(2,strTestDataFile)      
+  
+   End With 
+  End With
+  
+  Set objGrid = Nothing 
+  Set objTemp = Nothing 
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'sSeries_Information_Verification' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+    Err.Clear
+  End If  
+  
+  
+End Sub
+
+'*********************************************************************************************************************************8
+'Testcase:TC_STP_PRT17: Check for the button 'Series Information'
+Sub sSource_Information_Verification(strParameters)
+'Sub sSource_Information_Verification()
+  
+  On Error Resume Next
+  
+  Dim strTestDataFile, STPSheetName, strLevel1Source, strLevel2Source, strLevel3Source, strSourceSeriesType
+  Dim intlastRow, FilePath, objSTPXls, objGrid, objpanel
+
+  
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName=getSplitValue(strParameters,"STPSheetName") 
+  strLevel1Source=getSplitValue(strParameters,"Level1Source")
+  strLevel2Source=getSplitValue(strParameters,"Level2Source")
+  strLevel3Source=getSplitValue(strParameters,"Level3Source")
+  strSourceSeriesType=getSplitValue(strParameters,"SourceSeriesType")
+'  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"  
+'  strLevel1Source="Test"
+'  strLevel2Source= "Automation_UIT4_1"
+'  strLevel3Source = "ProjectTeam_STP"
+'  strSourceSeriesType = "Primary"
+  
+  
+  'Get the last Row information
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)-1   
+  'strStartcolumn =  fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  Delay(2000)
+  
+  
+  Set objSTPXls=GetObject(FilePath)
+  'objSTPXls.Maximize()
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With
+    With .WorkSheets(STPSheetName) 
+    
+      'Select the Last Row 
+      .Cells(intlastRow,3).Select   
+     Call Aliases.EXCEL3.wndXLMAIN.EXCEL23.MsoCommandBar.MsoWorkPane.NUIPane.NetUIHWND.NetUICtrlNotifySink.CMMOcxHost.InformationPane.pageView.MSAAObject("pt_Source_Information").DblClick()
+     Set objGrid = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView") 
+     Set objpanel = objGrid.WinFormsObject("sourceInfoPage").WinFormsObject("sourceInformationView").WinFormsObject("tableLayoutPanel1").WinFormsObject("ReportGridView")
+       
+      Level1Source_Value = objpanel.wChildView(0).wValue(0, 2)
+      Level2Source_Value = objpanel.wChildView(0).wValue(1, 2)
+      Level3Source_Value = objpanel.wChildView(0).wValue(2, 2)
+      Source_Series_Type_Value = objpanel.wValue(0, 2)         
+   
+   
+     If strLevel1Source = Level1Source_Value And strLevel2Source= Level2Source_Value And _
+         strLevel3Source= Level3Source_Value And strSourceSeriesType = Source_Series_Type_Value Then
+      
+               strTCRemarks = "Source series type and source levels are verified"
+               log.message strTCRemarks
+               strTestCaseResult = "PASS" 
+    Else
+               strTCRemarks = "Source series type and source levels fields are not correct"
+               log.message strTCRemarks
+               strTestCaseResult = "FAIL"   
+     
+     End If
+   End With 
+  End With
+  
+  Set objGrid = Nothing 
+  Set objpanel = nothing 
+  'If Err.Number > 0 Then
+   ' Log.Warning("Error in 'sSeries_Information_Verification' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+   ' Err.Clear
+  'End If  
+End Sub
+
+'*********************************************************************************************************************************8
+'Testcase:TC_STP_PRT18-20:Check for the function 'QC Setting
+Sub sQC_Setting(strParameters)
+'Sub sQC_Setting()
+  
+  On Error Resume Next
+  
+  Dim strTestDataFile, STPSheetName, strLevel1Source, strLevel2Source, strLevel3Source, strSourceSeriesType
+  Dim intlastRow, FilePath, objSTPXls, objGrid, objpanel
+   Dim radPageView
+  
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName=getSplitValue(strParameters,"STPSheetName") 
+  intTimepoint = aqConvert.StrToInt(getSplitValue(strParameters,"Timepoint")) 
+
+'  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"  
+
+  
+  
+  'Get the last Row information
+  intlastRow =  fLastRow(strTestDataFile, STPSheetName)-1   
+  strStartcolumn =  fStratColumn(strTestDataFile, STPSheetName, intlastRow)
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  Delay(2000)
+  
+  Set objSTPXls=GetObject(FilePath)
+  With objSTPXls
+    With .Sheets(STPSheetName).Select
+    End With   
+
+    With .WorkSheets(STPSheetName)
+    
+        'Select the series then enter the -ve, 0 and +ve timepoints
+        strSeriesID =.Cells(intlastRow,1).Value
+        .Cells(intlastRow,strStartcolumn+5).Select  
+        strValue = .Cells(intlastRow,strStartcolumn+5).Value
+        .Cells(intlastRow,strStartcolumn+5).Value = strValue*(-2)
+        .Cells(intlastRow,strStartcolumn+6).Value = 0
+        .Cells(intlastRow,strStartcolumn+7).Value =  strValue+5
+        .Cells(intlastRow,strStartcolumn+8).Value =  strValue+10
+        
+        'Click on QC Setting 
+        Call sClickQCSetting(2,strTestDataFile) 
+        
+        'Check the checkbox for 'N/A','Zero','Positive' 
+        Set objGrid = Sys.Process("EXCEL", 2).WinFormsObject("QCControlForm").WinFormsObject("mainPanel").WinFormsObject("ruleGridView")
+        Set objTemp = objGrid.MSAAObject("row_Row_1_Column_Series_ID_Value_"&strSeriesID).MSAAObject("cell_Row_1_Column_Series_ID_Value_"&strSeriesID&"_3")
+        Call objTemp.Click()
+        Set objTemp = objGrid.MSAAObject("table_TelerikWinControlsUIRadGridView_214").MSAAObject("row_Row_1_Column_NA_Value_1").MSAAObject("cell_Row_1_Column_NA_Value_1_4")
+        Call objTemp.Click()
+        Set objTemp = objGrid.MSAAObject("table_TelerikWinControlsUIRadGridView_214").MSAAObject("row_Row_1_Column_Zero_Value_1").MSAAObject("cell_Row_1_Column_Zero_Value_1_5")
+        Call objTemp.Click()   
+        
+        'click on Save Button
+        Set objTemp = Sys.Process("EXCEL", 2).WinFormsObject("QCControlForm").WinFormsObject("mainPanel").WinFormsObject("buttonPanel").WinFormsObject("saveButton").MSAAObject("btn_Save")
+        Call objTemp.Click()
+        
+        Delay 3000, "Please Wait..."
+        
+        
+        'Verify QC Result The added -ve  timepoint value should be shown as QC failed (filled with background), rest should be shown as QC Pass
+        'Click on QC Result 
+        'strTemp = "MSAAObject(""pt_QC_Result"")"
+        'Set objGrid = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView")       
+        'Set objTemp = objGrid.FindChild("Name",strTemp,50,true) 
+        'objTemp.DblClick()  
+        
+         
+      Set radPageView = Aliases.EXCEL3.wndXLMAIN.EXCEL23.MsoCommandBar.MsoWorkPane.NUIPane.NetUIHWND.NetUICtrlNotifySink.CMMOcxHost.InformationPane.pageView
+      Call radPageView.MSAAObject("pt_QC_Result").Click()
+      Call radPageView.MSAAObject("pt_QC_Result").Click()  
+        
+        Delay 2000
+        strTemp = "WinFormsObject(""qcResultGridView"")"
+        Set objGrid = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1)._
+             Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView").WinFormsObject("qcResultPage").WinFormsObject("qcResultNavigation").WinFormsObject("freqPageView").WinFormsObject("RadPageViewPage", "A1_1").WinFormsObject("QCResultGrid").WinFormsObject("pnlMain").FindChild("Name",strTemp,10,True)
+       Sys.Process("EXCEL", 2).Window("XLMAIN", "YYY-Automation_UIT4_1-ProjectTeam - Excel", 1).Window("EXCEL2", "", 1).Window("MsoCommandBar", "EDGE Information", 1).Window("MsoWorkPane", "EDGE Information", 1)._
+       Window("NUIPane", "", 1).Window("NetUIHWND", "", 1).Window("NetUICtrlNotifySink", "", 1).Window("CMMOcxHost", "", 1).WinFormsObject("InformationPane").WinFormsObject("pageView").WinFormsObject("qcResultPage").WinFormsObject("qcResultNavigation").WinFormsObject("freqPageView").WinFormsObject("RadPageViewPage", "A1_1").WinFormsObject("QCResultGrid").WinFormsObject("pnlMain").WinFormsObject("qcResultGridView").MSAAObject("table_DataGridView").MSAAObject("row_Top_Row").MSAAObject("column_header_Address")
+       
+       rCount = objGrid.RowCount
+      For I = 0 to rCount-1
+        If strSeriesID = objGrid.wValue(I,1) Then 
+          If  objGrid.wValue(I,2) = "Non-positive values aren't allowed." then 
+            strTCRemarks = "TC_STP_PRT18 : The added -ve  timepoint value shown as QC failed, Zero and Positive values are QC Pass"
+            log.message strTCRemarks 
+            Call fUpdate_STP(strTestDataFile)
+            strTestCaseResult = "PASS"
+            Exit For
+          Else
+            strTCRemarks = "Cancel Mark Good is not turn the Mark good timepoint back to QC failed timepoint"
+            log.message strTCRemarks
+            strTestCaseResult = "FAIL"
+        End If
+      End If
+    Next      
+   
+   .Cells(intlastRow,strStartcolumn+3).Select  
+   If .Cells(intlastRow,strStartcolumn+5).Value = strValue*(-2) And .Cells(intlastRow,strStartcolumn+6).Value = 0_
+      And .Cells(intlastRow,strStartcolumn+7).Value =  strValue+5 And .Cells(intlastRow,strStartcolumn+8).Value =  strValue+10 Then 
+        strTCRemarks = strTCRemarks & "<br />" &"TC_STP_PRT20: QC settings have been updated"
+        log.message strTCRemarks 
+        strTestCaseResult = "PASS"
+   Else
+        strTCRemarks = strTCRemarks & "<br />" &"TC_STP_PRT20: QC settings have not been updated"
+        log.message strTCRemarks 
+        strTestCaseResult = "FAIL"  
+   End If    
+     
+   End With 
+  End With
+  
+  Set objGrid = Nothing 
+  Set objTemp = nothing 
+  
+  
+  'Close STP File
+  Call ExcelProcessKill() 
+  
+  'If Err.Number > 0 Then
+   ' Log.Warning("Error in 'sSeries_Information_Verification' , Error Description : " & Err.Description &" Error Number : "& Err.Number)
+   ' Err.Clear
+  'End If  
+End Sub
+
+'********************************************************************************************************************************************************************8
+'Testcase:TC_STP_PRT23: Verify Excel-Addin Buttons 
+Sub sVerify_Addin_Buttons(strParameters)
+'Sub sVerify_Addin_Buttons()
+On Error Resume Next
+  
+  Dim strTestDataFile, STPSheetName, strLevel1Source, strLevel2Source, strLevel3Source, strSourceSeriesType
+  Dim intlastRow, FilePath, objSTPXls, objGrid, objpanel
+  Dim blnFlag1,  blnFlag2, blnFlag3, blnFlag4, blnFlag5, blnFalg6
+
+  
+  strTestDataFile=getSplitValue(strParameters,"TestDataFile") 
+  STPSheetName=getSplitValue(strParameters,"STPSheetName") 
+  
+
+'  
+'  strTestDataFile = "YYY-Automation_UIT4_1-ProjectTeam"
+'  STPSheetName = "A1_1"  
+
+
+  FilePath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\Documents\Edge\EdgeAddinStorage\" & aqConvert.DateTimeToFormatStr(aqDateTime.Today,"%Y-%m-%d")&"\"&strTestDataFile & ".xlsx"
+  
+  
+  Set objExcel_1 = CreateObject("Excel.Application")
+  objExcel_1.Application.Visible = True
+  set objCTCChart = objExcel_1.Workbooks.Open(FilePath) 
+  Delay 2000 , "Please wait while page loading"
+  objCTCChart.Sheets("Sheet1").range(STPSheetName).select
+  Delay 200 
+  
+  Set NetUIHWND = Sys.Process("EXCEL", 2).Window("XLMAIN", strTestDataFile &"*", 1).Window("EXCEL2", "", 2).Window("MsoCommandBar", "Ribbon", 1).Window("MsoWorkPane", "Ribbon", 1).Window("NUIPane", "", 1).Window("NetUIHWND", "", 1)
+  strTemp= "MSAAObject(""pt_EDGE"")"
+  Set objTemp = NetUIHWND.FindChild("Name",strTemp,50,True)
+  Call objTemp.DblClick()
+  Delay 500
+  
+  blnFlag1 = False 
+  blnFlag2 = False
+  blnFlag3 = False
+  blnFlag4 = False
+  blnFlag5 = False
+  blnFlag6 = False
+  
+  
+  
+  'First SubTab
+  strTemp = "MSAAObject(""tool_bar_2"")"
+  Set objTemp =  NetUIHWND.FindChild("Name",strTemp,50,True)
+ 
+  If aqObject.GetPropertyValue(objTemp.AChild(0), "AName") = "QC" And _
+     aqObject.GetPropertyValue(objTemp.AChild(1), "AName") = "Mark Good" And _
+     aqObject.GetPropertyValue(objTemp.AChild(2), "AName") = "Cancel Mark Good" And _
+     aqObject.GetPropertyValue(objTemp.AChild(3), "AName") = "Upload" And _
+     aqObject.GetPropertyValue(objTemp.AChild(4), "AName") = "Partial Upload" And _
+     aqObject.GetPropertyValue(objTemp.AChild(6), "AName") = "Quick Chart" Then 
+     blnFlag1 = True
+     
+  End If
+  
+  'Second SubTab
+  strTemp = "MSAAObject(""tool_bar_3"")"
+  Set objTemp =  NetUIHWND.FindChild("Name",strTemp,50,True)
+  
+   If aqObject.GetPropertyValue(objTemp.AChild(0), "AName") = "Add Date" And _
+     aqObject.GetPropertyValue(objTemp.AChild(1), "AName") = "Add Frequency" And _
+     aqObject.GetPropertyValue(objTemp.AChild(2), "AName") = "Delete Values" And _
+     aqObject.GetPropertyValue(objTemp.AChild(4), "AName") = "Refresh" And _
+     aqObject.GetPropertyValue(objTemp.AChild(5), "AName") = "Auto Filter" And _
+     aqObject.GetPropertyValue(objTemp.AChild(6), "AName") = "Recover Data" Then 
+    blnFlag2 = True
+     
+  End If
+  
+  'Third Sub Tab
+  strTemp = "MSAAObject(""tool_bar_4"")"  
+  Set objTemp =  NetUIHWND.FindChild("Name",strTemp,50,True)
+  
+   If aqObject.GetPropertyValue(objTemp.AChild(0), "AName") = "Re-QC" And _
+     aqObject.GetPropertyValue(objTemp.AChild(1), "AName") = "QC Setting" And _
+     aqObject.GetPropertyValue(objTemp.AChild(2), "AName") = "QC Result" Then 
+     blnFlag3 = True
+     
+  End If
+  
+ 'Fourth SubTab
+  strTemp = "MSAAObject(""tool_bar_5"")"  
+  Set objTemp =  NetUIHWND.FindChild("Name",strTemp,50,True)
+  
+  if aqObject.GetPropertyValue(objTemp.AChild(0), "AName") = "Series Remarks" And _
+     aqObject.GetPropertyValue(objTemp.AChild(1), "AName") = "Series Information" And _
+     aqObject.GetPropertyValue(objTemp.AChild(2), "AName") = "Source Information" And _
+     aqObject.GetPropertyValue(objTemp.AChild(3), "AName") = "Timepoint Details" And _
+     aqObject.GetPropertyValue(objTemp.AChild(5), "AName") = "Test Formula" And _
+     aqObject.GetPropertyValue(objTemp.AChild(6), "AName") = "Compute Series" And _
+     aqObject.GetPropertyValue(objTemp.AChild(7), "AName") = "Rollover" And _
+     aqObject.GetPropertyValue(objTemp.AChild(8), "AName") = "Refresh Dropdown" Then 
+     blnFlag4 = True
+     
+  End If
+  
+  'Fifth Sub tab
+  strTemp = "MSAAObject(""tool_bar_6"")"  
+  Set objTemp =  NetUIHWND.FindChild("Name",strTemp,50,True)
+  if aqObject.GetPropertyValue(objTemp.AChild(0), "AName") = "About" And _
+     aqObject.GetPropertyValue(objTemp.AChild(1), "AName") = "Report an Issue"  Then 
+     blnFlag5 = True     
+  End If
+  
+  '6th SubTab
+  strTemp = "MSAAObject(""tool_bar_7"")"  
+  Set objTemp =  NetUIHWND.FindChild("Name",strTemp,50,True)
+  if aqObject.GetPropertyValue(objTemp.AChild(0), "AName") = "View Vintage" Then    
+     blnFlag6 = True     
+  End If
+  
+  If blnFlag1 = True And blnFlag2 = True And blnFlag3 = True And blnFlag4 = True And blnFlag5 = True And blnFlag6 = True Then 
+     strTCRemarks = "Edge addin buttons are displayed correctly when we open saved STP file"
+     log.message strTCRemarks
+     strTestCaseResult = "PASS" 
+  Else
+     strTCRemarks = "Edge addin buttons are not displayed correctly when we open saved STP file"
+     log.message strTCRemarks
+     strTestCaseResult = "FAIL"        
+   End If
+  
+objCTCChart.close
+
+
+Set objTemp = Sys.Process("EXCEL").Window("NUIDialog", "Microsoft Excel", 1).Window("NetUIHWND", "", 1).MSAAObject("btn_Dont_Save")
+If objTemp.Exists = True Then 
+  objTemp.Click
+End If
+
+Set objCTCChart = Nothing 
+Set objTemp= Nothing 
+Set objExcel_1= Nothing
+
+ 
+End Sub
+'***************************************************************************************************************************
+'Testcase:TC_STP_PRT21-22: Verify Open CN STP rights for level2 Source
+
+Sub sOpenCNSTP_Rights(strParameters)
+'Sub sOpenCNSTP_Rights()
+
+  On Error Resume Next
+  Dim strTemp, objTemp, IntRowNumber(4), strEnable_Value
+  
+  strLevel1 =getSplitValue(strParameters,"Level1")
+  strLevel2 =getSplitValue(strParameters,"Level2")
+
+  
+  
+'  strLevel1= "Albania"
+'  strLevel2 ="Albanian Association of Banks"
+'  strTestCase_no= "TC_STP_PRT21"
+
+'    strLevel1= "Test"
+'  strLevel2 ="Automation_UIT4_1"
+'  strTestCase_no= "TC_STP_PRT22"
+  
+  
+  
+   'Open Source Module
+   Call sHome_Source()
+   
+    'Select Level2 source
+  strTemp = "WPFObject(""SourceTreeListView"")"    
+  IntRowNumber(0) = fGridone(strTemp,strLevel1 )
+  IntRowNumber(1) = fGridTwo(strTemp,strLevel2 ,IntRowNumber(0))     
+  Call sEdgeProcessor() 
+  
+  Delay 2000
+  
+  'Verify the CNSTP button Status
+  strTemp= "WPFObject(""ContentControlEx"", ""Open CN STP"", 2)"
+  Set objTemp = Sys.Process("EdgeClient").FindChild("Name", strTemp, 50, True)
+  
+  strEnable_Value = aqObject.GetPropertyValue(objTemp, "Enabled")
+  
+   If  Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT21")) And strEnable_Value = False Then
+     strTCRemarks = "User has no 'Open CN STP' right for Selected Country : " & strLevel1
+     log.message strTCRemarks
+     strTestCaseResult = "PASS" 
+     
+  ElseIf Ucase(Trim(strTestCase_no)) = Ucase(Trim("TC_STP_PRT22")) And strEnable_Value = True Then
+     strTCRemarks = "The User has 'Open CN STP' right for Selected Country : " & strLevel1
+     log.message strTCRemarks
+     strTestCaseResult = "PASS"  
+  Else
+     strTCRemarks = "The User does not have the required rights for 'Open CN STP' button for the Selected Country : " & strLevel1
+     log.message strTCRemarks
+     strTestCaseResult = "FAIL" 
+     Exit Sub 
+  End If  
+ 
+End Sub
+
+  
+
+

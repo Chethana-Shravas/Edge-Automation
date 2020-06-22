@@ -1,0 +1,468 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT FrameWork
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT To_Do_Panel
+Option Explicit
+
+'**************************************************************
+' Purpose     : HTML Header
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub WriteHTMLHeader_Perf
+On Error Resume Next
+intTC_SlNo = 0
+       
+set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctUTF8,True)
+objHTML_File.Cursor = 0
+
+strTemp = "<table border=1 width=100%><tr><td colspan=4><font size=6 face=Cambria color=green><center>" & _
+            "<b>EDGE Performance Automation</b></center></font></td></tr>" & _
+            "<html><head><meta name=""generator"" content="" "">" & _
+            "<title>EDGE Automation</title><meta http-equiv=""refresh"" content=""150"">" & _
+            "<style type=""text/css"">div.c1 {text-align: left}</style></head><body>" & _
+            "<div class=""c1""><img src=""http://www.ceicdata.com/images/CEIC_Logo.gif""></div>"
+
+
+
+objHTML_File.writeLine strTemp
+
+' Write System Name - & Operating System
+strTemp = "<table border=1 width=100%><tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green"&"><b>System Name:</td>" & _
+  "<td width=30%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & Cstr(Sys.HostName) &"\"& Cstr(Sys.UserName) & "</b></font></td>" & _
+  "<td width=18%><font size="&"3.5 face="&"Cambria color="&"green"&"><b>Operating System:</b></font></td>"  & _
+  "<td width=32%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & strOS_Ver & "</b></font></td></tr>"
+
+objHTML_File.writeLine strTemp
+
+
+' Write Excel version - & EDGE Version
+strTemp = "<tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green><b>Excel Version:</b></font></td>" & _
+             "<td width=30%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & strExcel_Ver & "</b></font></td>" & _
+             "<td width=18%><font size="&"3.5 face="&"Cambria color="&"green><b>EDGE Version/Build:</b></font></td>" & _
+             "<td width=32%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & strEDGE_Ver & "</b></font></td></tr>"
+
+objHTML_File.writeLine strTemp
+
+' Write Total TC - & Execution start time
+strTemp = "<tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green><b>No. of Test Cases:</b></font></td>" & _
+            "<td width=30%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & intTotal_TC & "</b></font></td>" & _
+            "<td width=18%><font size="&"3.5 face="&"Cambria color="&"green><b>Execution Started At:</b></font></td>" & _ 
+            "<td width=32%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & dtStartTime & "</b></font></td>" & _
+            "</tr></table>"
+
+
+objHTML_File.writeLine strTemp 
+
+'*********** WEB Service Location
+strTemp = "<table border=1 width=100%><tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green><b>Web Service Location:  " & sWS & "  </b></font></td></tr></table>"
+
+objHTML_File.writeLine strTemp
+
+'******************************
+Strtemp="<table border=1 bordercolor=Blue width=100%><th align=center width=38%><font size=3 face=Cambria color=green><b>"&"EDGE 2.5 Perfomance Testcases"&"</b></font></th>"&_
+        "<th align=center width=7%><font size=3 face=Cambria color=green><b>"&"EDGE 2.5.8.1"&"</b></font></th>"&_
+        "<th align=center width=31%><font size=3 face=Cambria color=green><b>"&"EDGE 2.5 MNT- 2.5.8.8"&_
+        "</b></font></th><th align=center width=22%><font size=3 face=Cambria color=green><b>"&"EDGE 2.5 Vs EDGE 2.5 MNT"&"</b></font></th></Table>"
+
+objHTML_File.writeLine strTemp
+
+
+
+
+'******************* Iterations
+dim strIteration, intI             
+strIteration = ""
+intI = 1
+For intI = 1 To intTotalItr
+   'strIteration = strIteration & "<th width=9%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> I-" & intI & </b></font></th>"
+   strIteration = strIteration & "<th width=5%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Itr-"& intI & "(Sec)</b></font> </th>"
+Next
+
+
+strTemp = "<meta http-equiv="&"refresh content="&"150"&"><table border="&"1"&" width=100%>"&"<tr>" & _
+          "<th width=5%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> SL No </b></font></th>" & _
+          "<th width=7%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Test Case Id </b></font></th>" & _
+          "<th width=27%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Test Case Description </b></font> </th>" &_
+          "<th width=7%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> AVG Time(Sec)</b></font> </th>"  & _ 
+           strIteration & "<th width=6%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> AVG Time(Sec) </b></font></th>"&_
+           "<th width=6%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Difference(Sec) </b></font></th>"&_
+           "<th width=6%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> % Diff </b></font></th>"&_
+           "<th width=10%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Error Margin </b></font></th></tr>"
+
+objHTML_File.writeLine strTemp           
+
+
+
+
+objHTML_File.Close  
+If Err.Number <> 0 Then
+  Log.Warning("Error occurred in 'WriteHTMLHeader' - " & Err.Description)
+  Err.Clear
+End IF        
+End Sub
+
+'**************************************************************
+' Purpose     : HTML Body 
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub WriteHTMLBody_Perf()
+Dim strHTML_Line, strFontColor,strFontColorstatus,intj  ' Green for pass cases, Red for Failed cases and Gray for Aborted cases
+On Error Resume Next
+    
+  'Set color of the display text in the table rows  
+    strFontColor="Black"
+  if sStatus="LOSS" then
+      strFontColorstatus="Red"
+  elseif sStatus="GAIN" then
+          strFontColorstatus="Green"
+  elseif sStatus="OK" then
+      strFontColorstatus="Black"  
+  end if
+  if strTestCaseResult<> "PASS" then
+  strFontColor="Red"
+  strFontColorstatus="Red"
+  sStatus=strTestCaseResult
+  end if
+  
+  Log.Message("HTML Body " & strTestCase_No)
+  
+  intTC_SlNo = intTC_SlNo + 1   
+  set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctUTF8,False)
+  If strTestCaseDescription = "" then
+    strTestCaseDescription = "NA"
+  End If
+  If strExpExecutionTime = "" then
+    strExpExecutionTime = "NA"
+  End If
+  If strTCExecutionTime = "" then
+    strTCExecutionTime = "NA"
+  End If
+  If strTCRemarks = "" then
+    strTCRemarks = "NA"
+  End If
+  If strLHDesc <> "" Then
+    strLHDesc = "-" & strLHDesc
+  Else
+    strLHDesc = ""
+  End If 
+  
+dim strIteration, intI          
+strIteration = ""
+
+For intI = 0 to UBound(aArrayTCTime)- 1  
+  strIteration = strIteration & "<td align=Right><font size=2.8 face=Cambria color=""" & strFontColor & """>" & aArrayTimesInt1(intI) & "</font></td>"
+Next
+  
+  
+  PercDiff=Round(PercDiff,1)*100
+  PercDiff=PercDiff&"%"
+  timefinediff=Round(timefinediff,1)
+  sAvgTCTime=Round(sAvgTCTime,1)
+    
+'   if strTestCaseResult<> "PASS" then
+'          strFontColor="Gray"
+'            strIteration = strIteration & "<td><font size=2.8 face=Cambria color=""" & strFontColor & """><center>" & "NA" & "</font></td>"
+'    strHTML_Line="<tr><td><font size=2.8 face=Cambria color=""" & strFontColor & """><right>" & intTC_SlNo & _
+'          "</font></td><td><font size=2.8 face=Cambria color=""" & strFontColor & """><center>" & strTestCase_No & _
+'          "</font></td><td><font size=2.8 face=Cambria color=""" & strFontColor & """>" & _
+'          strTestCaseDescription & "</font></td><td bgcolor=lightgreen><font size=2.8 face=Cambria color=""" & strFontColor & """><center>" & _
+'          strExpExecutionTime & "</font></td>"&strIteration&"<td bgcolor=lightgreen><font size=2.8 face=Cambria color=""" & strFontColor & """><center>"&"NA"&"</font></td>"&_
+'          "<td><font size=2.8 face=Cambria color=""" & strFontColor & """><center>"&"NA"&"</font></td>"&_
+'          "<td><font size=2.8 face=Cambria color=""" & strFontColor & """><center>"&"NA"&"</font></td>"&_
+'          "<td><font size=2.8 face=Cambria color=""" & strFontColorstatus & """><center>"&"NA"&"</font></td></tr>"  
+'    else
+    
+   '<td width = 30%><font size=3.5 face=Cambria color=blue>" & intTC_SlNo & "/" & intTotal_TC & "</font></td>
+          
+  strHTML_Line = "<tr><td align=right><font size=2.8 face=Cambria color=""" & strFontColor & """>" & intTC_SlNo & _
+          "</font></td><td align=left><font size=2.8 face=Cambria color=""" & strFontColor & """>" & strTestCase_No & _
+          "</font></td><td align=left><font size=2.8 face=Cambria color=""" & strFontColor & """>" & _
+          strTestCaseDescription & "</font></td><td bgcolor=lightgreen align=Right><font size=2.8 face=Cambria color=""" & strFontColor & """>" & _
+          strExpExecutionTime & "</font></td>"&strIteration&"<td bgcolor=lightgreen align=Right><font size=2.8 face=Cambria color=""" & strFontColor & """>"& _
+          sAvgTCTime &"</font></td><td align=Right><font size=2.8 face=Cambria color=""" & strFontColor & """>"& _
+          timefinediff &"</font></td><td align=Right><font size=2.8 face=Cambria color=""" & strFontColor & """>"& _
+          PercDiff&"</font></td><td align=Left><font size=2.8 face=Cambria color=""" & strFontColorstatus & """>"& _
+          sStatus &"</font></td></tr>"  
+
+  objHTML_File.writeline(strHTML_Line)    
+  objHTML_File.close
+  
+If Err.Number <> 0 Then
+  Log.Warning("Error occurred in 'WriteHTMLBody' - " & Err.Description)
+  Err.Clear
+End IF
+  
+End sub
+
+' Write Execution Summary as HTML file footer
+
+Sub WriteHTMLFooter_Perf
+On Error Resume Next
+  
+  'Open HTML file in append mode
+  set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctANSI,False)
+             
+  strTemp = "</table><table border=1 width=100%><tr><td width = 20%><font size=3.5 face=Cambria>" & "Total No. of Test Cases Executed" & "</font></td>"&"<td width = 30%><font size=3.5 face=Cambria color=blue>" & intTC_SlNo & "/" & intTotal_TC & "</font></td>" 
+  strTemp = strTemp & "<td width = 18%><font size=3.5 face=Cambria>Total Execution Time</font></td><td width = 32%><font size=3.5 face=Cambria color=blue>" & strActualExecutionTime & "</font></td></tr>"
+  strTemp = strTemp & "<tr><td width = 20%><font size=3.5 face=Cambria>Total Pass</font></td><td width = 30%><font size=3.5 face=Cambria color=blue>" & intTotal_Pass & "</font></td><td><font size=3.5 face=Cambria>Total Fail</font></td><td width=32%><font size=3.5 face=Cambria color=blue>" & intTotal_Fail & "</font></td></tr>"
+  strTemp = strTemp & "<tr><td width = 20%><font size=3.5 face=Cambria>Total Aborted</font></td><td width = 30%><font size=3.5 face=Cambria color=blue>" & intTotal_Abort & "</font></td><td><font size=3.5 face=Cambria>Execution Ended At</font></td><td  width=32%><font size=3.5 face=Cambria color=blue>" & dtEndTime & "</font></td></tr>"
+  
+  If blnCriticalErrorFound = False then
+   if blnSuccess = True  Then
+      strTemp = strTemp & "<tr ><td colspan=4><font size=5 face=Cambria color=green><center>Execution Completed Successfully.</center></font></td></tr>" 
+   Else 
+      strTemp = strTemp & "<tr ><td colspan=4><font size=5 face=Cambria color=gray><center>Execution manually aborted!</center></font></td></tr>" 
+   end if    
+  
+  Else 
+      strTemp = strTemp & "<tr ><td colspan=4><font size=5 face=Cambria color=red><center>Execution gracefully terminated.</center></font></td></tr>"
+      strTemp = strTemp & "<tr ><td colspan=4><font size=3 face=Cambria color=red><center>" & strCriticalError & "</center></font></td></tr>"
+  End If  
+  
+   strTemp = strTemp & "</table></body>"
+            
+  objHTML_File.writeline(strTemp)
+  objHTML_File.close
+
+  If Err.Number <> 0 Then
+    Log.Warning("Error in 'WriteHTMLFooter' - " & Err.Description)
+  End IF
+End Sub
+
+'**************************************************************
+' Purpose     : Calculate Remaining Execution time 
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub Rem_ExeTime_Perf()
+     Dim  strpp,strpp1,str
+     set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faRead,aqfile.ctANSI,False)
+     strpp=objHTML_File.Readall
+     objHTML_File.close
+     
+      str=aqString.Find(strpp, "Remaining Execution Time: ",0,false)
+      str=str+Len("Remaining Execution Time: ")
+      str=aqString.SubString(strpp,str,10)
+      strpp1=aqString.Replace(strpp,str,time_Rem,false)
+     
+     set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctANSI,False)
+     objHTML_File.Cursor = 0   
+     objHTML_File.Write(strpp1)
+     objHTML_File.close  
+     Delay(200)
+End Sub
+
+Sub WriteHTMLHeader
+'On Error Resume Next
+intTC_SlNo = 0
+       
+set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctUTF8,True)
+objHTML_File.Cursor = 0
+
+strTemp = "<table border=1 width=100%><tr><td colspan=4><font size=6 face=Cambria color=green><center>" & _
+            "<b>EDGE Automation</b></center></font></td></tr>" & _
+            "<html><head><meta name=""generator"" content="" "">" & _
+            "<title>EDGE Automation</title><meta http-equiv=""refresh"" content=""150"">" & _
+            "<style type=""text/css"">div.c1 {text-align: left}</style></head><body>" & _
+            "<div class=""c1""><img src=""http://www.ceicdata.com/images/CEIC_Logo.gif""></div>"
+
+
+
+objHTML_File.writeLine strTemp
+
+' Write System Name - & Operating System
+strTemp = "<table border=1 width=100%><tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green"&"><b>System Name:</td>" & _
+  "<td width=30%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & Cstr(Sys.HostName) &"\"& Cstr(Sys.UserName) & "</b></font></td>" & _
+  "<td width=18%><font size="&"3.5 face="&"Cambria color="&"green"&"><b>Operating System:</b></font></td>"  & _
+  "<td width=32%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & strOS_Ver & "</b></font></td></tr>"
+
+objHTML_File.writeLine strTemp
+
+
+' Write Excel version - & EDGE Version
+strTemp = "<tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green><b>Excel Version:</b></font></td>" & _
+             "<td width=30%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & strExcel_Ver & "</b></font></td>" & _
+             "<td width=18%><font size="&"3.5 face="&"Cambria color="&"green><b>EDGE Version/Build:</b></font></td>" & _
+             "<td width=32%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & strEDGE_Ver & "</b></font></td></tr>"
+
+objHTML_File.writeLine strTemp
+
+' Write Total TC - & Execution start time
+strTemp = "<tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green><b>No. of Test Cases:</b></font></td>" & _
+            "<td width=30%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & intTotal_TC & "</b></font></td>" & _
+            "<td width=18%><font size="&"3.5 face="&"Cambria color="&"green><b>Execution Started At:</b></font></td>" & _ 
+            "<td width=32%><font size="&"3.5 face="&"Cambria color="&"brown><b>" & dtStartTime & "</b></font></td>" & _
+            "</tr></table>"
+
+
+objHTML_File.writeLine strTemp 
+strTemp = "<table border=1 width=100%><tr><td width=20%><font size="&"3.5 face="&"Cambria color="&"green><b>Remaining Execution Time: "& Time_Rem &" </b></font></td></tr></table>"
+objHTML_File.writeLine strTemp
+
+strTemp = "<meta http-equiv="&"refresh content="&"150"&"><table border="&"1"&" width=100%>"&"<tr>" & _
+          "<th width=10%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Sl No - Time </b></font></th>" & _
+          "<th width=10%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Test Case Id </b></font></th>" & _
+          "<th width=30%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Test Case Description </b></font> </th>" & _
+          "<th width=9%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Expected Time </b></font> </th>" & _
+          "<th width=9%><font size="&"2.8 face="&"Cambria color="&"blue"&"><b> Actual Time </b></font></th>" & _
+          "<th width=32%><font size="&"2.8 face="&"Cambria color="&"blue><b> Execution Remarks </b></font></th></tr>"
+
+objHTML_File.writeLine strTemp           
+
+
+
+objHTML_File.Close  
+If Err.Number <> 0 Then
+  Log.Warning("Error occurred in 'WriteHTMLHeader' - " & Err.Description)
+  Err.Clear
+End IF        
+End Sub
+
+'**************************************************************
+' Purpose     : HTML Body 
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub WriteHTMLBody()
+Dim strHTML_Line, strFontColor  ' Green for pass cases, Red for Failed cases and Gray for Aborted cases
+On Error Resume Next
+    
+  'Set color of the display text in the table rows  
+  if strTestCaseResult="PASS" then
+    strFontColor="Green"
+  elseif strTestCaseResult="FAIL" then
+    strFontColor="Red"
+  elseif strTestCaseResult="ABORT" then
+    strFontColor="Gray"
+  end if
+  
+  Log.Message("HTML Body " & strTestCase_No)
+  
+  intTC_SlNo = intTC_SlNo + 1   
+  set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctUTF8,False)
+  
+ 
+  strTemp = intTC_SlNo & "/" & intTotal_TC & " - " & aqDateTime.Time
+  If strTestCaseDescription = "" then
+    strTestCaseDescription = "NA"
+  End If
+  If strExpExecutionTime = "" then
+    strExpExecutionTime = "NA"
+  End If
+  If strTCExecutionTime = "" then
+    strTCExecutionTime = "NA"
+  End If
+  If strTCRemarks = "" then
+    strTCRemarks = "NA"
+  End If
+  If strLHDesc <> "" Then
+    strLHDesc = "-" & strLHDesc
+  Else
+    strLHDesc = ""
+  End If 
+  
+  strHTML_Line = "<tr><td><font size=2.8 face=Cambria color=""" & strFontColor & """>" & strTemp & _
+          "</font></td>"&"<td><font size=2.8 face=Cambria color=""" & strFontColor & """>" & strTestCase_No & _
+          "</font></td>" 
+          
+  strHTML_Line = strHTML_Line & "<td><font size=2.8 face=Cambria color=""" & strFontColor & """>" & _
+          strTestCaseDescription & "</font></td><td><font size=2.8 face=Cambria color=""" & strFontColor & """>" & _
+          strExpExecutionTime & "</font></td><td><font size=2.8 face=Cambria color=""" & strFontColor & """>"& _
+          strTCExecutionTime &"</font></td><td><font size=2.8 face=Cambria color=""" & strFontColor & """>"  
+  objHTML_File.writeline(strHTML_Line)    
+  objHTML_File.close
+ set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctUTF8,False)
+  
+  strHTML_Line ="<p>"& strTCCompleteRemarks & strLHDesc&"</P>" 
+  objHTML_File.writeline(strHTML_Line)
+  objHTML_File.close
+  
+  set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctANSI,False)
+  
+  strHTML_Line ="</font></td></tr>"
+  objHTML_File.writeline(strHTML_Line)
+  objHTML_File.close
+  
+  
+'  Log.Message(Len(strHTML_Line))
+'  Log.Message(strHTML_Line)
+If Err.Number <> 0 Then
+  Log.Warning("Error occurred in 'WriteHTMLBody' - " & Err.Description)
+  Err.Clear
+End IF
+  
+End sub
+
+' Write Execution Summary as HTML file footer
+
+Sub WriteHTMLFooter
+On Error Resume Next
+  
+  'Open HTML file in append mode
+  set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctANSI,False)
+             
+  strTemp = "</table><table border=1 width=100%><tr><td width = 20%><font size=3.5 face=Cambria>" & "Total No. of Test Cases Executed" & "</font></td>"&"<td width = 30%><font size=3.5 face=Cambria color=blue>" & intTC_SlNo & "/" & intTotal_TC & "</font></td>" 
+  strTemp = strTemp & "<td width = 18%><font size=3.5 face=Cambria>Total Execution Time</font></td><td width = 32%><font size=3.5 face=Cambria color=blue>" & strActualExecutionTime & "</font></td></tr>"
+  strTemp = strTemp & "<tr><td width = 20%><font size=3.5 face=Cambria>Total Pass</font></td><td width = 30%><font size=3.5 face=Cambria color=blue>" & intTotal_Pass & "</font></td><td><font size=3.5 face=Cambria>Total Fail</font></td><td width=32%><font size=3.5 face=Cambria color=blue>" & intTotal_Fail & "</font></td></tr>"
+  strTemp = strTemp & "<tr><td width = 20%><font size=3.5 face=Cambria>Total Aborted</font></td><td width = 30%><font size=3.5 face=Cambria color=blue>" & intTotal_Abort & "</font></td><td><font size=3.5 face=Cambria>Execution Ended At</font></td><td  width=32%><font size=3.5 face=Cambria color=blue>" & dtEndTime & "</font></td></tr>"
+  
+  If blnCriticalErrorFound = False then
+   If blnSuccess = True  Then
+      strTemp = strTemp & "<tr ><td colspan=4><font size=5 face=Cambria color=green><center>Execution Completed Successfully.</center></font></td></tr>" 
+   Else 
+      strTemp = strTemp & "<tr ><td colspan=4><font size=5 face=Cambria color=gray><center>Execution manually aborted!</center></font></td></tr>" 
+   end If    
+  
+  Else 
+      strTemp = strTemp & "<tr ><td colspan=4><font size=5 face=Cambria color=red><center>Execution gracefully terminated.</center></font></td></tr>"
+      strTemp = strTemp & "<tr ><td colspan=4><font size=3 face=Cambria color=red><center>" & strCriticalError & "</center></font></td></tr>"
+  End If  
+  
+   strTemp = strTemp & "</table></body>"
+            
+  objHTML_File.writeline(strTemp)
+  objHTML_File.close
+
+  If Err.Number <> 0 Then
+   Log.Warning("Error in 'WriteHTMLFooter' - " & Err.Description)
+  End If
+End Sub
+
+'**************************************************************
+' Purpose     : Calculate remaining Execution time.  
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub Rem_ExeTime()
+     Dim  strpp,strpp1,str
+     set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faRead,aqfile.ctANSI,False)
+     strpp=objHTML_File.Readall
+     objHTML_File.close
+     
+      str=aqString.Find(strpp, "Remaining Execution Time: ",0,false)
+      str=str+Len("Remaining Execution Time: ")
+      str=aqString.SubString(strpp,str,10)
+      strpp1=aqString.Replace(strpp,str,time_Rem,false)
+     
+     set objHTML_File = aqFile.OpenTextFile(strExe_HTML, aqFile.faWrite,aqfile.ctANSI,False)
+     objHTML_File.Cursor = 0   
+     objHTML_File.Write(strpp1)
+     objHTML_File.close  
+     Delay(200)
+End Sub
+

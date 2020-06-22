@@ -1,0 +1,2116 @@
+﻿'USEUNIT DM
+'USEUNIT EDGE_Util
+'USEUNIT File_Repository
+'USEUNIT HTML
+'USEUNIT Layout
+'USEUNIT Master_Maintanance
+'USEUNIT PRT_BMT
+'USEUNIT Release_Schedule
+'USEUNIT Series_Search
+'USEUNIT Source
+'USEUNIT SourceSchedule
+'USEUNIT STP
+'USEUNIT To_Do_Panel
+
+
+Option Explicit
+
+'******* Public Object Variables ****
+' Excel, Login page, EDGE Message windows, EDGE Add_in in Excel, Temporary object
+Public objExcel, objEDGE_MDI, objEDGE_Login, objEDGE_MsgBox, objEDGE_Addin, objTemp,strTCCompleteRemarks,DescText,strWrkSpaceName,strDesc1,strRequiredDesc
+Public strName(10), intRowCount,strTimepointDetails, intSeriesID(5),strSeriesID
+
+Public intlastRowSTP,strStartRowSTP,strStartRowSTP1,intlastRowSTP1,strFooter,blnGlobalFlag
+
+' True if the respective objects are loaded state
+Public  blnEDGE_MDI, blnEDGE_Login, blnUnexpectedError,blnWrite, blnDebug,objRefreshXls, blnsys,RemTime,Time_Rem
+
+' Run.xls, Master worksheet, Test worksheet, Active window
+Public objRunXls, objMaster_Sheet, objTest_Sheet, objActiveWindow,totaltime,Search_Difference,Time2,new_time,RouTime
+Public objVerifyExcel,objSourceExcel,sWS
+' Text file objects   - for failed testcases and for aborted testcases       
+Public objFailedTC_File, objAbortedTC_File, objHTML_File,Difference,Rem_time
+'Word, Power Point
+Public objWord, objPpt
+
+' Bulion - Critical issue found, Save log, Send e-mail, Iteration run successfully
+Public blnCriticalErrorFound, blnSaveLogFiles, blnSendEMail, blnSuccess,aArrayTimesInt1 
+Public blnStrMsg,Watch, blnTimeRecorded,blnEDGESystem,blnx86Folder,blnMode,Watch2,watch3
+
+'******* Public String Variables ****
+' String - TestCase number, result (Pass/Fail/Abort), TC_Description, Expected Result, Actual Result
+Public strTestCase_No, strTestCaseResult,strTestCaseDescription, strExpectedResult, strActualResult
+Public strLHDesc
+' String - Critical error message, Temp String variable, Remarks for HTML file (why failed, aborted etc)
+Public strCriticalError, strTemp, strTCRemarks, strKeyWord        ' Keyword string from test.xls  - 2nd column
+      
+' String - Project Files Path (ini, run.xls), EDGE Trace file path (AppTraceV20.log), 
+' Save logs path (local/WebServer)
+Public strProjectFilesPath, strEDGEAppPath, strLogFolder, strSambaFolder, strWebServer, strMailingList,strTestMode 
+Public strSMTPServer, strRunPath, strTestDataPath, strLogfile, strEnvi
+
+
+' String - Environment variables:  Versions - OS, Excel, EDGE, System Name
+Public strOS_Ver, strExcel_Ver,strExcel_MajorVer, strEDGE_Ver, strSys_Name, strObserveration
+' String - EDGE Username, Password
+Public strUsername, strPassword,timefinediff
+
+Public strExe_HTML
+Public strLog , strFailMesssage
+strFailMesssage = ""
+'****
+' Date - Start DateTime, End DateTime, total execution time
+Public dtStartTime, dtEndTime, strExpExecutionTime, strActualExecutionTime
+
+' Date - Start DateTime, End DateTime, and execution time for each testcase
+Public dtTCStartTime, dtTCEndTime, strTCExecutionTime
+
+' Integers - Total TestCases executed, Pass, Fail, Aborted.
+Public intTotal_TC, intTotal_Pass, intTotal_Fail, intTotal_Abort, intShowStopper, intTC_SlNo, intCriticalErrorCount
+Public intLoadError, picCount, blnScreenshot, intResultRow,strRequiredTCName
+' Public constants
+' wait mili seconds - display quick status, long status, login page to load, MDI to load.
+Public Const Status_Wait = 1500, Status_LongWait = 10000, LoginPage_Wait = 20000, MDILoad_Wait = 180000
+
+'Iterations
+Public intCurItr, intTotalItr
+
+Public strIteration, aArrayTCTime, sAvgTCTime, aArrayKWDesc,Watcharraysplit,Watcharray
+Public sExStart, sExStop
+Public Currtime, LastTime,lasttime12,finediff,percdiff,sStatus,objSTPXls,blnSTPfile
+
+Public strSourceFileText,strLayoutFileText
+blnGlobalFlag = False
+''' Excel objects
+''Public objExcelMain, ObjExcel, objRunXls, objMaster_Sheet, objTest_Sheet
+''Public objSourceExcel,objVerifyExcel
+''
+''' FrameWork Variables
+''' TC Execution
+''Public intTotal_TC, intTotal_Pass, intTotal_Fail, intTotal_Abort, intShowStopper
+''Public intTC_SlNo, intCriticalErrorCount, intLoadError
+''
+''Public strTestCase_No, strTestCaseResult,strTestCaseDescription, strExpectedResult, strActualResult
+''Public strCriticalError, strTCRemarks,strTCCompleteRemarks,strTemp
+''
+''Public blnCriticalErrorFound, blnUnexpectedError
+''
+''Public Status_wait, Status_Longwait
+''
+''' Execution output files       
+''Public objFailedTC_File, objAbortedTC_File, strExe_HTML, objHTML_File
+''
+''' Execution time 
+''Public dtTotalExpExeTime, dtRemTime, dtTCExpExeTime, dtTCActExeTime
+''Public dtStartTime,Watch,Difference,Rem_time
+''
+''' ini
+''Public strProjectFilesPath, strEdgeAppPath, strLogFolder, strLogfile, strSambaFolder
+''Public strWebServer, strMailingList, strTestMode, strSMTPServer, strRunPath
+''
+''Public blnSaveLogFiles, blnSendEMail, blnx86Folder, blnSuccess
+''Public blnEDGESystem, blnTimeRecorded,blnMode,blnsys
+''Public RemTime,Time_Rem
+
+'**************************************************************
+' Purpose     : Execution starts from this procedure. 
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub Main()
+
+Dim strTemp,MyTimer
+
+  'On Error Resume Next
+
+  dtStartTime = aqDateTime.Now
+  intTotal_TC = 0
+  intTotal_Pass = 0
+  intTotal_Fail = 0
+  intTotal_Abort = 0
+  intShowStopper = 0
+  intTC_SlNo = 0
+  intCriticalErrorCount = 0
+  
+  Set MyTimer = Utils.Timers.Add(300000,"PRT_BMT.EdgeCleanUp",True)
+  RouTime=0
+  
+  Log.LockEvents()
+
+  Log.Message "Execution Started at :" & aqConvert.DateTimeToFormatStr(dtStartTime,"%d/%m/%y %H:%M:%S")
+  
+  strProjectFilesPath = aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\My Documents\EDGE Automation\EDGE\"
+  strEDGEAppPath= aqEnvironment.GetEnvironmentVariable("USERPROFILE") & "\AppData\Local\EDGE\"
+ 
+
+  strLogFolder = strProjectFilesPath & "Logs\" 
+
+  ' Open a text file to write failed testcase IDs
+  strTemp = strProjectFilesPath & "\FailedCases.txt"
+  set objFailedTC_File = aqFile.OpenTextFile(strTemp, aqFile.faReadWrite,aqfile.ctANSI,True)
+  objFailedTC_File.Cursor = 0
+
+  ' Open a text file to write aborted testcase IDs
+  strTemp = strProjectFilesPath & "\AbortedCases.txt"
+  set objAbortedTC_File = aqFile.OpenTextFile(strTemp, aqFile.faReadWrite,aqfile.ctANSI,True)
+  objAbortedTC_File.Cursor = 0
+
+  strLogfile = strLogFolder & "\Logfile.txt"
+  If aqFile.Exists(strLogfile) Then
+    aqFile.Delete(strLogfile)
+  End If   
+  aqFile.Create(strLogfile)
+  
+  strRunPath= strProjectFilesPath & "Run" 
+  strTestDataPath= strProjectFilesPath & "Testdata" 
+  
+  Call subReadIni
+
+  If aqFile.Exists(strSambaFolder & Sys.UserName) = False Then
+    aqFileSystem.CreateFolder(strSambaFolder & Sys.UserName)
+  End If   
+
+  If aqFileSystem.Exists(strSambaFolder)Then
+    strExe_HTML =  strSambaFolder  & Sys.UserName &"\Current_Execution.html"  ' HTML filename which is updated during execution.
+  Else
+    strExe_HTML =  strLogFolder & "Current_Execution.html"  ' HTML filename which is updated during execution.
+  End If 
+
+  ' folder to save screenshots
+  If aqFileSystem.Exists(strLogFolder & "Screenshots") = True Then
+    aqFileSystem.DeleteFolder strLogFolder & "Screenshots",True
+    aqFileSystem.CreateFolder(strLogFolder & "Screenshots")
+  Else
+    aqFileSystem.CreateFolder(strLogFolder & "Screenshots")
+  End If
+
+  If aqFile.Exists(strLogFolder & "Screenshots.rar")=True Then
+    aqFile.Delete(strLogFolder & "Screenshots.rar")
+  End If 
+
+  Call subOpenExcelFiles ' Open Master.xls & Test.xls
+ 
+  If Err.Number > 0 Then
+    Log.Error("Error in 'Main()' - " & Err.Description)
+    Err.Clear
+  End If
+End Sub
+
+
+' System generated event on UnexpectedWinodw
+' Author        : Guru
+' Date          : 16-09-2009
+' Last Modified : 10-05-2012 By Mohanakshi
+' Purpose : On appearence of unexpected window - script what actions to be taken.
+
+Sub GeneralEvents_OnUnexpectedWindow(Sender, Window, LogParams)
+Log.Message "TestComplete's 'OnUnexpectedWindow' event triggered"
+Call ObjectNotloaded(strKeyWord)
+Call EdgeCleanUp2
+End Sub
+
+'**************************************************************
+' Purpose : On execution timeout - script what actions to be taken.
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+Sub GeneralEvents_OnTimeout(Sender, Params)
+  Log.Error("TimeOUT!!")
+End Sub
+
+
+'**************************************************************
+' Purpose : Irrespective of exectuion got successfully completed or got aborted, 
+' do actions like save logs, send e-mail alert if opted etc.
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+Sub GeneralEvents_OnStopTest(Sender)
+
+Dim strTemp
+On Error Resume Next
+dtEndTime = aqDateTime.Now
+strActualExecutionTime = aqConvert.TimeIntervalToStr(aqDateTime.TimeInterval(dtStartTime,dtEndTime))
+
+Log.Message "Execution Ended on - " & aqConvert.DateTimeToFormatStr(dtEndTime,"%d/%m/%y %H:%M:%S")
+Log.Message "Total Execution time - " & strActualExecutionTime
+Log.Message "Total TestCases Executed :" & intTC_SlNo  
+Log.Message "Total TestCases Passed :" & intTotal_Pass  
+Log.Message "Total TestCases Failed :" & intTotal_Fail
+Log.Message "Total TestCases Aborted :" & intTotal_Abort  
+
+Delay status_wait,"Completing HTML File"
+
+If blnMode = True Then
+   Call WriteHTMLFooter_Perf()
+  Else
+    Call WriteHTMLFooter 
+  End If
+' Conclude HTML File
+                       
+On error Resume Next ' Expecting issues excel file objects while closing
+Call SaveAndEMailLogFiles ' Save Log files
+If blnCriticalErrorFound = False then
+   If blnSuccess = True  Then
+      strTemp = "Hurrayy...Reached End of Execution.  Congratulation!!"    
+   Else 
+      strTemp = "Execution manually aborted! :("
+   End If    
+  Log.Message strTemp 
+Else  
+  strTemp = "Execution gracefully terminated. :(("
+  Log.error strCriticalError
+  Log.Error strTemp
+End If        
+If Err.Number > 0 Then
+  Log.Warning("Error in 'OnStopTest' - " & Err.Description)
+  Err.Clear
+End If   
+End Sub
+
+'**************************************************************
+' Purpose : On appearence of unexpected window - script what actions to be taken.
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub GeneralEvents_OnOverlappingWindow(Sender, Window, OverlappingWindow, LogParams)
+  Log.Error "OverLapping Window"
+End Sub
+
+'**************************************************************
+' Purpose : After a testcase is fully executed, based on current result status, conlcude testcase result.
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+    
+Sub ConcludeTCResults(TestNumber)
+ 'On Error Resume Next 
+  If blnMode = True Then
+    Call WriteHTMLBody_Perf()
+  Else
+    Call WriteHTMLBody()
+  End If   ' Log a entry in to html file
+    
+  If strTestCaseResult = "PASS" Then
+    intTotal_Pass = intTotal_Pass  + 1
+  ElseIf strTestCaseResult = "FAIL" Then
+    intTotal_Fail = intTotal_Fail +  1
+    strTemp = TestNumber & " - " & strTCRemarks
+    If objFailedTC_File.WriteLine(strTemp) = True then
+      Log.Message( TestNumber & " is logged to 'FailedCases.txt'")
+    Else
+      Log.Error("Couldn't write " & TestNumber & " is logged to 'FailedCases.txt'")
+    End If
+  Else
+    strTemp = TestNumber & " - " & strTCRemarks
+    intTotal_Abort = intTotal_Abort + 1
+    If objAbortedTC_File.WriteLine(strTemp) = True then
+      Log.Message( TestNumber & " is logged to 'AbortedCases.txt'")
+    Else
+      Log.Error("Couldn't not write " & TestNumber & " is logged to 'AbortedCases.txt'")
+    End If
+  End If  
+  Log.Message("Result of '" & strTestCase_No & "' is '" & strTestCaseResult & "' and Remarks = '" & strTCRemarks & "'")
+  If Err.Number > 0 Then
+    Log.Warning("Error in 'ConcludeTCResults()' - " & Err.Description)
+    Err.Clear
+  End If 
+  
+End Sub                                                                   
+
+'**************************************************************
+' Purpose : Core routine.  Open Run.xls and control testcase/keywords execution flow.
+' Create      : 16/Apr/2015
+' Last Updated: 
+'**************************************************************
+
+Sub subOpenExcelFiles
+Dim iMasterRowCount  '   Integer variable to scan master.xls file rows
+Dim iTestCurrentRow  ' Integer variable to scan test.xls
+Dim intI ' Temp integer value to keep count in 'Do' loops
+Dim intJ ' Temp integer value to keep count in 'Do' loops
+
+Dim strTestData1      ' Testdata string from test.xls - 3rd columm
+Dim strTestData2      ' TestData string from test.xls - 4th column
+Dim iTestCaseFirstRow
+Dim intTestModecolumn 'Integer variable to identify the test type mode
+Dim strModule,Time1,Time2,new_time, str 
+Dim strTCTotalTime   
+strTCTotalTime = ""
+Dim intTotSec, intAbortCase 
+Dim dtKWStarttime,totaltime
+Dim dtKWEndtime, sSort, aArrayTCTimeSort, aArrayTimesInt 
+Dim strKWExecutionTime
+Dim strKeywordsDesc
+Dim strKWTime
+strKWTime = ""
+DIM Watchstr,Watchstr1
+Watchstr=""
+Watchstr1=""
+Dim strClose,ReplaceFile,strTemp,objFileSys
+
+iTestCaseFirstRow = 0
+
+On Error resume Next
+
+Set Watch = HISUtils.StopWatch
+Time1="12/12/2012"& " "& "00:00:00"
+Time1=aqConvert.StrToDateTime(Time1)
+Time2=Time1
+new_time=Time1
+
+'Set ObjExcel = Sys.OleObject("Excel.Application")
+Set ObjExcel = CreateObject("Excel.Application")
+objExcel.Visible = True
+objExcel.DisplayAlerts = False
+Set Watch = HISUtils.StopWatch
+Set objRunXls = objExcel.workbooks.Open(strProjectFilesPath & "Run.xlsx")
+
+Call GetExecutionEnvironment
+if Err.Number <> 0 Then
+  Log.Error "Error Opening Excel.  Please kill Excel application if it is running in background"
+  Log.Error Err.Description
+  strCriticalError = "Couldn't activate Excel Application or open Run.xlsx"
+  blnSuccess = False
+  blnCriticalErrorFound = True
+  Runner.Stop()
+Else
+  Log.Message("Excel Application and Run.xlsx opened successfully")
+  on error goto 0  
+End if
+
+' Master file not found                        
+If Err.Number <> 0 Then    
+  log.Error(Err.number & Err.description)
+  strTemp = "Critical Error Found. Problem opening Excel Files. Execution Aborted!  :(("         
+  Log.Error(strTemp)  
+  blnCriticalErrorFound = True
+  blnSuccess = False
+  strCriticalError = strTemp
+  Runner.Stop()
+Else
+  Log.Message "Run.xlsx file opened successfully" 
+End If
+
+
+' Read testcases & filename one by one.
+Set objMaster_Sheet = objRunXls.worksheets("Master")
+If Err.Number <> 0 Then        
+  Log.Error(Err.number & Err.description)
+  strTemp = "Critical Error Found.  'Master' Sheet not found in Run.xls.  Execution Aborted!!  :(("    
+  Log.Error(strTemp)  
+  blnSuccess = False
+  blnCriticalErrorFound = True
+  strCriticalError = strTemp
+  Runner.Stop()
+Else
+  on error goto 0 ' - disable resume next
+  Log.Message "Master Sheet found in Run.xlsx" 
+End If
+     
+'Included the below line for Run.xlsx modification by Chethana on 22/11/2017
+If strTestMode = "CT" then
+    intTestModecolumn = 5
+ElseIf strTestMode ="RT" then
+    intTestModecolumn = 6
+ElseIf strTestMode ="PRT" then
+    intTestModecolumn = 7
+ElseIf strTestMode ="BMT" then
+    intTestModecolumn = 8
+ElseIf strTestMode ="WSRT" then
+    intTestModecolumn = 9
+ElseIf strTestMode ="PST" then
+    intTestModecolumn = 10
+ElseIf strTestMode ="ERT" then
+    intTestModecolumn = 11 
+ElseIf strTestMode ="Source_RT" then
+    intTestModecolumn = 9
+ElseIf strTestMode ="PT" then
+    intTestModecolumn = 10
+ElseIf strTestMode ="COMP" then
+    intTestModecolumn = 11
+End If
+   
+
+intTotal_TC = 0
+iMasterRowCount = 3   ' first test case starts from 3rd row
+' 1st column till end
+
+delay Status_wait, "Counting TestCases to be Executed.."
+
+'Loop to get the total no. of testcases to be executed
+Do Until Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) = "END"
+  If Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) <> "" Then
+      If Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,2))) = "YES" then
+        strTemp = Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1)))
+        Log.Message ("Executing module " & strTemp)
+        totaltime=0
+        dim a
+        While Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) = strTemp or _
+            Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) = ""  
+                If blnsys="" and Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,intTestModecolumn))) = "YES" or Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,12))) = blnsys and blnsys<>"" Then
+'                  If blnsys="" and Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,intTestModecolumn))) = "YES"  Then
+                   
+                               intTotal_TC = intTotal_TC  + 1                                                  
+                               'Total Time of Execution
+                                str=objMaster_Sheet.cells(iMasterRowCount,4).text
+                                str="12/12/2012"& " "& str 
+                                str= aqConvert.StrToDateTime(str)
+                                Time2 = aqDateTime.AddTime(Time2,0,aqdatetime.GetHours(str),aqdatetime.GetMinutes(str),aqdatetime.GetSeconds(str))
+                                               
+                Else             
+                End IF
+            iMasterRowCount = iMasterRowCount + 1 
+        Wend 
+            iMasterRowCount = iMasterRowCount - 1    
+      Else
+          Log.Message ("Skipping module - " & Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))))
+      End If         
+  Else
+    
+ End If
+  iMasterRowCount = iMasterRowCount + 1
+Loop  
+
+Difference = aqDateTime.TimeInterval(Time1, Time2)
+'intTotal_TC =intTotal_TC-1
+delay Status_wait, "Total no. of testcases to be executed  = " & intTotal_TC  
+Log.Message ("Total no. of testcases to be executed  = " & intTotal_TC)
+iMasterRowCount =3 ' Excel should be read from 3rd row.
+strModule = objMaster_Sheet.cells(iMasterRowCount,1)
+Time_Rem=aqConvert.TimeIntervalToStr(Difference)
+
+if blnMode = True Then
+  Call WriteHTMLHeader_Perf
+Else
+  Call WriteHTMLHeader
+End IF
+
+' Search for TestCase ID in Text.xls
+  If Err.Number <> 0 Then        
+    Log.Error(Err.number & Err.description)
+    strTemp = "Critical Error!.  '" & strModule & "' Sheet not found in Run.xlsx.  Execution Aborted."   
+    Log.Error(strTemp) 
+    blnSuccess = False 
+    blnCriticalErrorFound = True
+    strCriticalError = strTemp
+    Runner.Stop()
+  Else
+    on error goto 0 ' - disable resume next
+  End If
+
+  intTotal_Pass=0                      
+  intTotal_Fail=0
+  intTotal_Abort=0
+  intShowStopper=0
+
+'Loop to execute the testcases 
+Do Until Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) = "END"
+  If Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) <> "" Then
+      If Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,2))) = "YES" then
+        strTemp = Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1)))
+        Log.Message ("Executing module " & strTemp)
+        While Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) = strTemp or _
+            Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))) = ""  
+            If blnsys="" and Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,intTestModecolumn))) = "YES" or Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,9))) = blnsys and blnsys<>"" Then  
+              strTestCaseResult = "PASS"       
+              strTCRemarks = ""                                        ' by default
+              strTCCompleteRemarks=""
+              strTestCaseDescription = ""
+              blnStrMsg=True
+              picCount = 1 
+              
+              Set objTest_Sheet = objRunXls.worksheets(strTemp)
+              strTestCase_no = Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,3)))
+              strExpExecutionTime = Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,4)))
+        '**************************** testing
+       
+        
+        dtTCStartTime = aqDateTime.Now
+        strTemp = "Execution of TC : " & strTestCase_no & " started at - " & dtTCStartTime
+        blnTimeRecorded = False
+        Watch.Reset
+          
+        delay status_wait, strTemp
+        iTestCurrentRow = 1      
+        ' Start search from 1st row of test.xls
+        If strTestCase_no <> "" Then ' Not Empty row in Master.xls
+          iTestCurrentRow = 1
+          Log.Message("Looking for " & strTestCase_no & " in Test.xlsx")         
+          Do Until Trim(Ucase(objTest_Sheet.cells(iTestCurrentRow,1))) = strTestCase_no
+            iTestCurrentRow= iTestCurrentRow + 1      
+            If iTestCurrentRow >= 25000 Then      ' Testcase not found in first 25000 rows in test.xls
+              strTestCaseResult = "ABORT" 
+              'strTCRemarks = "TestCase Not defined in Sheet 'Test' of Run.xlsx.  TestCase ID = " & strTestCase_no    
+              strTCRemarks = "TestCase Not defined in Sheet '" & strModule & "' of Run.xlsx.  TestCase ID = " & strTestCase_no
+              Log.Error(strTCRemarks) 
+              Exit Do           ' Go to next TestCase
+            End If   
+        Loop
+        ' TestCase ID found
+        If Trim(Ucase(objTest_Sheet.cells(iTestCurrentRow,1))) = strTestCase_no Then  
+            strRequiredTCName = strTestCase_no
+          ' Testcase found in Test.xls           
+          strTemp = strTestCase_no & " found at row number " & iTestCurrentRow 
+         ' Log.Message(strTemp)
+          strExpectedResult = Trim(objTest_Sheet.cells(iTestCurrentRow,8)) ' 8th column in test.xls
+          strTestCaseDescription = Trim(objTest_Sheet.cells(iTestCurrentRow,6)) ' 6th column in test.xls
+          strLHDesc = Trim(objTest_Sheet.cells(iTestCurrentRow,5))
+          strTemp = "Executing " & strTestCase_no & ". Looking for Keywords and TestData"
+          IntCurItr=intTotalItr
+          aArrayTimesInt=""
+          intTotSec=""
+          strTCTotalTime = "" 
+          intTotSec = 0
+          sAvgTCTime = ""
+          intAbortCase = 0
+     
+     iTestCaseFirstRow = iTestCurrentRow
+
+         If IntCurItr=5 and (intTC_SlNo Mod 10)=0 and intTC_SlNo <> 0 then
+               Call LogintoEDGE("LOGIN","")
+         end if
+          iTestCurrentRow = iTestCaseFirstRow 
+          intI = 1
+          Do Until Trim(UCase(objTest_Sheet.cells(iTestCurrentRow,1))) = "END" OR strTestCaseResult <> "PASS"  ' Till we find 'End' for a testcase
+            intI = intI +  1
+            strKeyWord = Trim(UCase(objTest_Sheet.cells(iTestCurrentRow,2)))     ' Keyword in 2nd column of test.xls        
+            strTestData1 = CStr(objTest_Sheet.cells(iTestCurrentRow,3))    ' TestData of keyword in 3rd column
+            strTestData2 = cstr(objTest_Sheet.cells(iTestCurrentRow,4))    ' TestData of keyword in 4rd column
+            strTemp = "Executing Keyword - " & strKeyWord +  vbCrLf 
+            If trim(strTestData1) <> "" then
+              strTemp = strTemp & "TestData1 - " & strTestData1  + vbCrLf
+              sExStart=getSplitValue(UCase(strTestData1),"EXSTART")
+              sExStop=getSplitValue(UCase(strTestData1),"EXSTOP")
+            Else
+                ' Don't log TestData1
+                strTestData1 = ""
+            End if            
+            If trim(strTestData2) <> "" then
+                strTemp = strTemp & "TestData2 - " & strTestData2  + vbCrLf
+            Else
+                ' Don't log TestData2
+                strTestData2 = ""
+            End if         
+              Search_Difference=Time_Rem 
+              
+              dim strmem
+              Log.Message(strTemp)
+              
+              RouTime=aqDateTime.Now
+              Call ExecuteKeyWord(strKeyWord, strTestData1, strTestData2)     
+              Delay 200            ' Execute Keyword
+              RouTime=0
+              
+              iTestCurrentRow = iTestCurrentRow + 1
+              If strTCRemarks <> "" Then
+              strTCCompleteRemarks=strTCCompleteRemarks + "<br/>" + strTCRemarks
+              strTCRemarks = ""
+              End If
+            ' If end not found in next 50 lines - abort testcase
+              If intI > 50 Then                    ' End statement not found subsequent 50 rows for the current test case
+                strTCRemarks = "'End' statement not found in 50 rows for the TestCase.  Please verify. TestCase ID = " & sTestCase_No    
+                Log.Error(strTCRemarks)                              
+                strTestCaseResult = "ABORT"
+                Exit Do           ' Go to next TestCase
+              End If
+          Loop   
+          dtTCEndTime = aqDateTime.Now
+          strTCExecutionTime = aqConvert.TimeIntervalToStr(aqDateTime.TimeInterval(dtTCStartTime,dtTCEndTime))           
+          Log.Message("Execution of TC : " & strTestCase_no & " has taken - " & strTCExecutionTime & " time.") 
+          blnTimeRecorded = False
+           Else                                          
+          ' Go to next line in test.xls
+        End IF 
+      Elseif strTestCase_no = "" Then
+        Log.Message "Empty row found in 'Master' Sheet. Skipping the row"     
+      End if 
+  ' Handle Missing 'End' in Testcase ID
+      if iMasterRowCount >= 10000 Then
+        strTemp = "'End' statement not found in first 10000 rows of 'Master' sheet.  Execution Aborted."      
+        Log.Error(strTemp) 
+        blnCriticalErrorFound = True
+        strCriticalError = strTemp 
+        blnSuccess = False
+        Runner.Stop()                    ' Abort execution
+      End If              
+      If strTestCase_no <> "" AND strTestCaseResult <> "" then
+        Log.Message("Test Case result of " & strTestCase_no & " is " & strTestCaseResult)
+       '******************* Testing
+       ' dtTCEndTime = aqDateTime.Now
+        Log.Message("Execution of TC : " & strTestCase_no & " Ended at - " & dtTCEndTime)
+        
+        Log.Message("Execution of TC : " & strTestCase_no & " has taken - " & strTCExecutionTime & " time.")
+        ' Write TC execution results to HTML File.
+                     
+        Difference="12/12/2012"& " " & strExpExecutionTime
+        Difference=aqConvert.StrToDateTime(Difference)
+        new_time=aqDateTime.AddTime(new_time,0,aqdatetime.GetHours(Difference),aqdatetime.GetMinutes(Difference),aqdatetime.GetSeconds(Difference))
+        Difference =aqDateTime.AddTime(time2,-0,-aqdatetime.GetHours(new_time),-aqdatetime.GetMinutes(new_time),-aqdatetime.GetSeconds(new_time))
+        Rem_time = aqDateTime.TimeInterval(Difference,Time1)
+        Time_Rem=aqConvert.TimeIntervalToStr(Rem_time)    
+                      
+        aArrayTCTimeSort=0             
+        aArrayTCTime = Split(strTCTotalTime,";")
+        aArrayTimesInt1=Split(aArrayTimesInt,";")
+        aArrayKWDesc = Split(strKeywordsDesc,";")
+        Watcharraysplit=Split(Watcharray,";")
+              
+               Call ConcludeTCResults(strTestCase_no) ' **********
+      Else
+        ' Empty row in master sheet. Skip and go to next row.   
+      End If
+      End If
+             iMasterRowCount = iMasterRowCount + 1 
+        Wend 
+            iMasterRowCount = iMasterRowCount - 1
+      Else
+          Log.Message ("Skipping module - " & Trim(UCase(objMaster_Sheet.cells(iMasterRowCount,1))))
+      End If         
+   
+  Else
+    
+  End If
+  iMasterRowCount = iMasterRowCount + 1
+  
+  ' Close objSTPXls workbook
+  ' Close Excel instance objExcelSTP
+   On Error Resume Next
+   If blnSTPfile=False then
+    If objSTPXls Is Nothing = False then
+      objExcelSTP.Close 
+      Set objFileSys = CreateObject("Scripting.FileSystemObject") 'Calls the File System Object
+      objFileSys.DeleteFile(FilePath) ''Deleting STP
+      
+  
+      If objQCwb Is Nothing = False then
+        objQCwb.Close
+      End If
+      Delay 2000, "Pls wait.."
+      Set objSTPXls=Nothing
+      Set objQCwb=Nothing  
+    End If
+  End If
+  On Error Goto 0
+Loop  
+
+  ' Execution Completed
+  blnSuccess = True
+  objRunXls.Close, False
+  Set objRunXls = Nothing
+  delay 5000, "Closing Run.xlsx Excel.. Pls wait.."
+  objExcel.Quit
+
+'  Delay 5000, "Closing Excel Application.. Pls wait.."
+
+'  'Closing Edge
+'  Dim objClose
+'  strTemp="WPFObject(""PART_CloseButton"")"
+'  Set objClose=Sys.Process("EdgeClient").FindChild("Name",strTemp,50,true)
+'  Call objClose.Click
+'  'Sys.Process("EdgeClient").WPFObject("HwndSource: RibbonWindow").WPFObject("RibbonWindow").WPFObject("ContentControl", "", 1).WPFObject("Grid", "", 1).WPFObject("Grid", "", 2).WPFObject("ContentControl", "", 2).WPFObject("stackPanel").WPFObject("PART_CloseButton").Click
+'  'strTemp="WPFObject(""PART_ContainerContent"")"
+'  strTemp="WPFObject(""HwndSource: CustomMessageBoxWindow"", ""Edge"")"
+'  Set strClose=Sys.Process("EdgeClient").WaitChild(strTemp,60000)
+'  'Set strClose=Sys.Process("EdgeClient").WPFObject("HwndSource: CustomMessageBoxWindow", "Edge").WPFObject("CustomMessageBoxWindow", "Edge", 1).WPFObject("Grid", "", 1).WPFObject("FloatingContainerBorder").WPFObject("FloatingContainerBackground").WPFObject("Grid", "", 1).WPFObject("FloatingContainerBody").WPFObject("Grid", "", 1).WPFObject("Grid", "", 1).WaitChild(strTemp,120000)
+'  If strClose.Exists Then
+'    sys.Keys "Y"
+'  End If
+'  
+
+If Err.Number > 0 Then
+  Log.Warning("Error in 'subOpenExcelFiles' - " & Err.Description)
+  Err.Clear
+End If
+
+End Sub
+
+
+'**************************************************************
+' Purpose : Procedure to ready ini variables
+' Create : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+Sub subReadIni() 
+
+Dim oFileSystem ' File System Object
+Dim oFile ' File object
+Dim sData ' String Variable
+Dim aArray, bArray ' Array
+
+blnSaveLogFiles = True ' default
+blnSendEMail = False   ' default
+blnMode = False
+blnx86Folder = False
+blnEDGESystem = False
+
+Set oFileSystem = Sys.OleObject("Scripting.FileSystemObject") ' FileSystemObject
+' Get My Documents path of the current user
+Err.Clear
+'On error resume Next
+Set oFile = oFileSystem.OpenTextFile(strProjectFilesPath & "EDGEIni.ini", 1)            ' Open File Object
+
+If Err.number <>0 Then
+  Log.error (Err.description)
+  strTemp = "EDGEIni.ini file not found in " & strProjectFilesPath & "."  + vbCrLf
+  strTemp = strTemp & "Continuing executing with default values."
+  Log.warning strTemp 
+  blnSaveLogFiles = True  
+  blnSendEMail = False
+  strLogFolder = strProjectFilesPath & "Logs\"      
+Else
+  Call Log.Message("EDGEIni.ini file found in " & strProjectFilesPath)
+  While Not oFile.AtEndOfStream  ' Read from file
+    sData = oFile.ReadLine
+    If sData <> "" Then
+      aArray = Split(sData,"=")
+      strTemp = trim(ucase(aArray(0)))    
+      Select Case strTemp             
+      Case "SAVELOG"
+        If Trim(UCase(aArray(1))) = "FALSE" Then
+          blnSaveLogFiles =  False
+        Else
+          ' True by default      
+        End If
+        log.Message "Reading ini.. 'SAVELOG' is set to " & blnSaveLogFiles
+
+      Case "SENDEMAIL"
+        If Trim(UCase(aArray(1))) = "TRUE" Then
+          blnSendEMail =  True
+        Else
+          ' False by default
+        End If
+        log.Message "Reading ini.. 'SENDEMAIL' is set to " & blnSendEMail
+
+      Case "SAMBAFOLDER"
+        If Trim(UCase(aArray(1))) <> "" Then
+          strSambaFolder = Trim(aArray(1))  & "Logs\" & Cstr(Sys.HostName) & "\" 
+        Else
+          strSambaFolder = strLogFolder
+        End If
+        log.Message "Reading ini.. 'SAMBAFOLDER' is set to " & strSambaFolder
+        
+      Case "WEBSERVER"
+        If Trim(UCase(aArray(1))) <> "" Then
+          strWebServer = Trim(aArray(1))  & "Logs\" & Cstr(Sys.HostName) & "\"
+        Else
+          strWebServer = strLogFolder
+        End If
+        log.Message "Reading ini.. 'WEBSERVER' is set to " & strWebServer
+        
+      Case "MAILID"
+        If Trim(UCase(aArray(1))) <> "" Then
+          strMailingList = Trim(aArray(1))   
+        Else
+          strMailingList = "" 
+        End If
+        log.Message "Reading ini.. 'MAILID' is set to " & strMailingList
+        
+      'Included TestMode to identiry Testing iteration type (ST,RT,ERT,WSRT)  
+      
+      Case "TESTMODE"
+        If Trim(UCase(aArray(1))) <> "" Then
+          strTestMode = Trim(aArray(1))   
+        Else
+          strTestMode = "" 
+        End If
+        log.Message "Reading ini.. 'TESTMODE' is set to " & strTestMode
+        
+      Case "MAILSERVER"
+        If Trim(UCase(aArray(1))) <> "" Then
+          strSMTPServer = Trim(aArray(1))   
+        Else
+          strSMTPServer = "" 
+        End If
+        log.Message "Reading ini.. 'MAILSERVER' is set to " & strSMTPServer
+        
+      Case "EDGECLIENT"
+        If Trim(UCase(aArray(1))) = "TRUE" Then
+          blnEDGESystem = True   
+        Else
+          blnEDGESystem = False 
+        End If        
+        log.Message "Reading ini.. 'EDGECLIENT' is set to " & blnEDGESystem
+        
+      Case "X86FOLDER"
+        If Trim(UCase(aArray(1))) = "TRUE" Then
+          blnx86Folder = True   
+        Else
+          blnx86Folder = False 
+        End If
+        log.Message "Reading ini.. 'X86FOLDER' is set to " & blnx86Folder
+        
+     Case "MODE"
+        If Trim(UCase(aArray(1))) = "PERF" Then
+          blnMode = True   
+        Else     
+          blnMode = False 
+        End If 
+        log.Message "Reading ini.. 'MODE' is set to " & blnMode
+        
+    Case "ENVI"
+      
+        If Trim(UCase(aArray(1))) = "PRODUCTION" Then
+           strEnvi = "Edge ( US Production )"    
+        End If
+               
+        If Trim(UCase(aArray(1))) = "INTEGRATION" Then 
+            strEnvi = "Edge ( US Integration )" 
+        End If
+    
+        If Trim(UCase(aArray(1))) = "INTEGRATION RELEASE TEST" Then 
+            strEnvi = "Edge ( US Integration Release Test )" 
+        End If 
+        
+        If Trim(UCase(aArray(1))) = "DEVELOPMENT" Then 
+            strEnvi = "Edge ( Development Test )"       
+        End If
+          
+        If Trim(UCase(aArray(1))) = "PRODUCTION RELEASE TEST" Then 
+            strEnvi = "Edge ( US Production Release Test )"          
+        Else         
+          blnMode = False 
+        End If         
+        log.Message "Reading ini.. 'ENVI' is set to " & strEnvi
+        
+     Case else
+        Log.Message(strTemp & " Not defined in ini")    
+      End Select 
+    End IF
+  WEnd
+End If
+set aArray = Nothing  ' release array.
+oFile.Close           ' Close ini file
+
+If Err.Number > 0 Then
+  Log.Warning("Error in 'subReadIni()' - " & Err.Description)
+  Err.Clear
+End IF 
+End Sub
+
+'**************************************************************
+' Purpose : Procedure to prepare and send Log file
+' Create : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+Sub SaveAndEMailLogFiles 'Save log file as mht, html or xml format
+
+dim sDate, sDateTime   ' Get current 'date' and 'date-time' in 'ddmmyy' & 'ddmmyy-hhmm' format. For folder & log filename.
+dim sMHTFileName, sHMTLFileName ' Generate log file name at run time - <ddmmyy-hhmm>
+dim sLogFilePath     ' Log file path .. ../EDGE/Logs/<ddmmyy>/<ddmmyy-hhmm>/
+dim sSubject, sMessage      ' E-mail message (body)   
+dim sPrivatePath, sPublicPath
+dim aArray,intI
+
+sPrivatePath = ""
+sPublicPath = ""
+
+' Close FailedCases.txt and AbortedCases.txt
+On Error resume next
+
+' Add footer to EDGE log file.
+Const ForReading = 1, ForWriting = 2, ForAppending = 8, TristateFalse = 0
+Dim objFileSystem, objFile
+' Creates a new file object
+Set objFileSystem = CreateObject("Scripting.FileSystemObject")
+Set objFile = objFileSystem.OpenTextFile(strEDGEAppPath & "AppTraceV20.log", 8, 0)
+objFile.WriteLine "=================================================="
+objFile.WriteLine "EDGE Automation"
+Call Log.Message( "Execution Ended at " & aqDateTime.Now)
+objFile.WriteLine "Execution ended at : " & aqDateTime.Now
+objFile.WriteLine "====================Thank You====================="
+objFile.Close
+Set objFile = Nothing
+  
+' Create a folder with today's date if not exists
+sDate = aqConvert.DateTimeToFormatStr(aqDateTime.Now,"%d%m%y") ' ddmmyy
+sDateTime = aqConvert.DateTimeToFormatStr(aqDateTime.Now,"%d%m%y-%H%M") ' ddmmyy-hhmm
+
+sLogFilePath = strLogFolder & sDate & "\" & sDateTime     ' Log folder with ../Logs/date\date-time
+sMHTFileName = sLogFilePath & "\" & sDateTime & ".mht"      ' Save TestComplete log as mht.
+sHMTLFileName = sLogFilePath & "\" & sDateTime & ".html" 
+
+'Copy HTML
+aqFile.Copy strExe_HTML, sHMTLFileName, False
+Call Log.Message( "Execution HTML file " & strExe_HTML & " is copied to " & sHMTLFileName)
+
+' Copy EDGE Trace file to log folder
+aqFile.Copy strEDGEAppPath & "AppTraceV20.log", sLogFilePath & "\" & "AppTraceV20.log", False
+Call Log.Message( "EDGE Trace file " & strEDGEAppPath & "AppTraceV20.log" & " is copied to " & _
+                sLogFilePath & "\" & "AppTraceV20.log" )
+
+                
+'Copy Run.xlsx
+aqFile.Copy strProjectFilesPath & "Run.xlsx", sLogFilePath & "\" & "Run.xlsx", False
+Call Log.Message ("Run.xlsx in " & strProjectFilesPath  & " is copied to " &  sLogFilePath)  
+
+If aqFileSystem.CopyFolder(strRunPath, sLogFilePath) = True Then
+     Call Log.Message ("Run Folder copied to the Log folder")
+Else 
+     Call Log.Message ("Run Folder not copied to the Log folder")
+End If 
+
+If aqFileSystem.Exists(strLogFolder & "Screenshots") Then 
+If aqFileSystem.CopyFolder(strLogFolder & "Screenshots", sLogFilePath) = True Then
+     Call Log.Message ("Screenshots Folder copied to the Log folder")
+Else 
+     Call Log.Message ("Screenshots Folder not copied to the Log folder")
+End If 
+End If
+
+dim sFilePath, sFileList, sArchivePath
+dim blnAttScrShot 
+blnAttScrShot = False 
+blnScreenshot = False
+
+' Compress contents of Screenshot files
+sFilePath = strLogFolder & "Screenshots"
+sArchivePath = strLogFolder & "Screenshots"
+sFileList = slPacker.GetFileListFromFolder(sFilePath)
+'If Not IsEmpty(sFileList) Then
+If sFileList <> "" Then
+  If slPacker.Pack(sFileList, sFilePath, sArchivePath) Then ' Create .rar file
+      'Log.Message "Screenshots folder compressed successfully."
+      blnScreenshot = True   
+      If Cdbl(aqFile.GetSize(strLogFolder & "Screenshots.rar"))/1048576 > 1 Then
+          Log.Message "Screen shot rar size is greater than 1MB"    
+          blnAttScrShot = False   
+      Else
+          Log.Message "Screen shot rar size is less than 1MB"
+          blnAttScrShot = True   
+      End If 
+  End If                                       
+End If   
+                 
+'Save MHT
+Call Log.Message ("Execution Completed.  Saving Log file as " & sMHTFileName)
+Call Log.Message ("THANK YOU")
+Log.SaveResultsAs sMHTFileName , 2                           ' Save as .mht file
+
+                   
+If Err.number <> 0 Then
+  Log.Message("Error occurred while saving log files:" & Err.description) 
+  Err.Clear                     
+End if
+
+
+
+'   Send e-mail - might in a loop later to all the receipents -
+If blnSendEMail = True Then
+  If strSambaFolder <> "" Then
+    If aqFileSystem.Exists(strSambaFolder)Then
+        If aqFileSystem.CopyFolder (sLogFilePath, strSambaFolder & sDate, False) = True Then
+          delay 10000,"Copying log files from " & sLogFilePath & " to " & strSambaFolder &  sDate & "\" & sDateTime
+          sPrivatePath = strSambaFolder & sDate & "\" & sDateTime 
+        Else
+          Log.Error ("Problem copying folder")
+          If Err.Number <> 0 Then
+            Call Log.Message("Error description (copy folder) :" & Err.Description)
+          End IF
+        End IF
+    Else
+      Log.Warning("Samba folder path is not valid")
+    End If 
+  Else
+    sPrivatePath = "" 
+  End IF
+  If strWebServer <> "" Then
+    sPublicPath = strWebServer & sDate & "\" & sDateTime 
+  Else
+    sPublicPath = "" 
+  End IF
+  
+  ' Call FrameEmailMessage
+  if blnSuccess = False Then
+    sSubject = Sys.Hostname & "- **URGENT**. EDGE Daily Regression couldnot complete " & strEDGE_Ver '& " - Iteration :" & sDateTime
+  Elseif intTotal_Abort > 0 Then
+    sSubject = Sys.Hostname & "- **EDGE Daily Regression completed with warnings. " & strEDGE_Ver '& " - Iteration :" & sDateTime
+  Else
+    sSubject = Sys.Hostname & "- EDGE Daily Regression completed successfully. - " & strEDGE_Ver '& " - Iteration :" & sDateTime
+  End IF
+
+  sMessage = FrameEmailMessage(sPrivatePath,sPublicPath,sDateTime,sHMTLFileName,sMHTFileName)
+  
+  ' * Send e-mail to all the mail ids specified in ini.
+  If strMailingList <> "" Then  
+    aArray = split(strMailingList,";") ' Split test data first by Alt  Enter
+    Call Log.Message( UBound(aArray) + 1 & " mail ids found in INI file")
+    For intI = 0 to UBound(aArray) ' Split array and get all usersettings into respective variables
+      'strTemp = aArray(intI) & "@ceicdata.com"
+      strTemp = aArray(intI) & "@shravas.com"
+      If blnAttScrShot = True Then 
+       ' Call SendEmail("""EDGE Automation Team"" qa@ceicdata.com", strTemp, sSubject, sMessage, strEDGEAppPath & "AppTraceV20.log" & "," & strLogFolder & "Screenshots.rar")
+       Call SendEmail(strTemp, strTemp, sSubject, sMessage, strEDGEAppPath & "AppTraceV20.log" & "," & strLogFolder & "Screenshots.rar")
+      Else
+        Call SendEmail(strTemp, strTemp, sSubject, sMessage, strEDGEAppPath & "AppTraceV20.log")      
+      End If 
+        delay Status_Wait, "Sending e-mail to " & strTemp
+    Next
+  Else
+    Call Log.Message ("No mailing list provided")
+'    If blnAttScrShot = True Then
+'      Call SendEmail("""EDGE Automation Team"" qa@ceicdata.com", "gnarayana@ceicdata.com", sSubject, sMessage, strEDGEAppPath & "AppTraceV20.log" & "," & strLogFolder & "Screenshots.rar")     
+'    Else
+'      Call SendEmail("""EDGE Automation Team"" qa@ceicdata.com", "gnarayana@ceicdata.com", sSubject, sMessage, strEDGEAppPath & "AppTraceV20.log")
+'    End If 
+'    delay Status_Wait, "Sending e-mail to Guru"
+  End IF
+Else
+  ' Sending Log file by e-mail option is turned off
+  strTemp ="E-mailing log files is turned off." + vbCrLf
+  strTemp = strTemp & " To turn it on, pls change 'SendEmail' = True in the INI file"
+  Call Log.Message(strTemp)
+  strTemp = ""
+End IF
+If Err.number <> 0 Then
+  Call Log.Message("Error occurred while sending e-mail:" & Err.description) 
+  Err.Clear                     
+End if
+End Sub
+
+
+
+'**************************************************************
+' Purpose : Get Execution Environment
+' Create : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+Sub GetExecutionEnvironment
+dim objAboutEDGE, oTemp
+
+'Err.clear
+'On Error Resume Next
+'strOS_Ver =""
+'strSys_Name =""
+'strEDGE_Ver=""
+'Call sLaunch_EDGE ' Launch EDGE MDI
+'call CHECK_WS()
+strSys_Name = Cstr(Sys.HostName) & "\" & Cstr(Sys.UserName)
+
+'Call Log.Message("System Host name and user -" & strSys_Name)
+strOS_Ver = Sys.OSInfo.FullName
+
+'Call Log.Message("Operating System -" & strOS_Ver)
+'strExcel_Ver = Sys.Process("Excel").FileVersionInfo
+'itstrExcel_MajorVer = Left(strExcel_Ver,2) ' Excel version = /10/11/12/
+
+strExcel_Ver = Sys.Process("Excel").FileVersionInfo
+strExcel_MajorVer = Left(strExcel_Ver,2) ' Excel version = /10/11/12/
+'Call Log.Message("Excel Version - " & strExcel_Ver)
+'
+'' Get EDGE Version : Open about EDGE and get version
+'Delay 2000 
+'objExcel.WindowState = -4137 ' maximized 
+'objRunXls.Activate
+'set objActiveWindow = objExcel.ActiveWindow
+'Call Log.Message("Current active window : " & objExcel.ActiveWindow.caption)
+'objEDGE_MDI.minimize
+''Call ExcelActions("EDGE_VERSION")
+''Sys.Refresh
+'
+'strTemp = "WinFormsObject(""SplashScreen_EDGE"")"'.WinFormsObject(""MainLayoutPanel"").WinFormsObject(""DetailsLayoutPanel"").WinFormsObject(""Version"")"
+'
+'Set objAboutEDGE = Sys.Process("Excel").WaitChild(strTemp, 60000)  ' reset to 60 seconds in final version
+'If objAboutEDGE.Exists = True Then
+''  Log.Message "Inside objAboutEDGE exists"
+'  Set oTemp = objAboutEDGE.Find("Name","WinFormsObject(""Version"")",3,True)
+'  If oTemp.Exists = True Then
+'    strEDGE_Ver = oTemp.Text
+'    Call Log.Message ("Installed EDGE Version is " & oTemp.Text)
+'  Else
+'    strEDGE_Ver = "NA"
+'    Call Log.Message ("Unable to fetch EDGE version") 
+'  End IF
+'Else 
+'    
+'  Set objAboutEDGE = Sys.Process("ISI.CeicDataManager.Startup").Find("WndCaption","Build {0}.{1:00}.{2}.{3}",4,True)   
+'  ' Login page has not loaded yet - Look for connectivity issue.
+'  If objAboutEDGE.Exists = True Then
+'    strEDGE_Ver = objAboutEDGE.Text
+'    Call Log.Message ("EDGE Version is - " & objAboutEDGE.Text)
+'  Else
+'    Log.message("Problem loading 'About EDGE' page. Unable to fetch EDGE version!!!.")
+'  End IF
+'End If
+'
+'call Sys.Keys("[Esc]") ' - Close About EDGE button
+'
+'' Initialise AppTraceFile.
+'
+'  strTemp = strEDGEAppPath & "AppTraceV20.log"
+'  Const ForReading = 1, ForWriting = 2, ForAppending = 8, TristateFalse = 0
+'  Dim objFileSystem, objFile
+'  ' Creates a new file object
+'  Set objFileSystem = CreateObject("Scripting.FileSystemObject") 
+'  If Not objFileSystem.FileExists(strTemp) Then
+'    Set objFile = objFileSystem.CreateTextFile(strTemp)
+'    objFile.Close
+'  End If
+'  strTemp = strEDGEAppPath & "AppTraceV20.Log"
+'  Set objFile = objFileSystem.OpenTextFile(strTemp, ForWriting, TristateFalse)
+'  objFile.WriteLine "=================================================="
+'  objFile.WriteLine "EDGE Automation"
+'  strTemp = aqDateTime.Now
+'  objFile.WriteLine "Execution started at : " & strTemp
+'  Call Log.Message ("Execution started at : " & strTemp)
+'  objFile.WriteLine "Operating System     : " & strOS_Ver 'Get Operating System
+'  objFile.WriteLine "Excel Version        : " & strExcel_Ver 'Get Excel Version
+'  ObjFile.WriteLIne "EDGE Version/Build    : " & strEDGE_Ver
+'  objFile.WriteLine "=================================================="
+'  objFile.WriteLine
+'  objFile.Close
+'  Set objFile = Nothing
+'
+'If Err.Number <> 0 Then
+'  Log.Warning("Error in 'GetExecutionEnvironment' - " & Err.Description)
+'  Err.Clear
+'End IF 
+
+End Sub
+
+'**************************************************************
+' Purpose : 
+' Create : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+Function FrameEmailMessage (PrivatePath,PublicPath,DateTime,sHTMLFile,sMHTFile)
+dim sMessage, aArray
+dim strFailedCases, strAbortedCases
+dim oFileSystem ' File System Object
+dim oFile ' File object
+
+On Error Resume Next
+objFailedTC_File.cursor = 0
+objAbortedTC_File.cursor = 0
+strFailedCases =""
+StrAbortedCases = ""
+    
+If intTotal_Fail > 0 then
+  strFailedCases = objFailedTC_File.ReadAll
+Else
+  strFailedCases = "NONE"
+End IF
+If intTotal_Abort > 0 then
+  strAbortedCases = objAbortedTC_File.ReadAll
+Else
+  strAbortedCases = "NONE"
+End IF
+  
+If intTotal_Fail > 0 then
+  Call Log.Message ("Following are the 'failed' cases"  +vbCrLf +  strFailedCases)
+Else
+  Call Log.Message("No failed cases! Great!")
+End if
+  
+If intTotal_Abort > 0 then
+  Call Log.Message ("Following are the 'aborted' cases" + vbCrLf +  strAbortedCases)
+Else 
+  Call Log.Message ("No cases got aborted :)")
+End IF
+  
+If objFailedTC_File.Close() = True Then
+  Call Log.Message("FailedTestCases.txt file closed successfully")
+Else                                                         
+  Call Log.Message("Problem in closing FailedTestCases.txt file.")
+End If
+If objAbortedTC_File.close() = True Then
+  Call Log.Message("AbortedTestCases.txt file closed successfully")
+Else                                                         
+  Call Log.Message("Problem in closing AbortedTestCases.txt file.")
+End IF
+If Err.Number <> 0 Then
+  Log.error Err.Description
+End If
+
+sMessage = "<html><body><table border=0 width=100% colspan = 1>" 
+sMessage = sMessage & fAddHTML("Hi,",2,False,False)
+
+if blnSuccess = True Then
+  if intTotal_Abort > 0 Then
+    sMessage = sMessage & fAddHTML("EDGE Automated Regression completed with warning(s).",1,False,False)
+  Else
+    sMessage = sMessage & fAddHTML("EDGE Automated Regression suite successfully executed.",1,False,False)
+  End IF
+Else
+  sMessage = sMessage & fAddHTML("EDGE Automated Regression has failed to complete.",1,False,False)
+End If
+
+' Give HTML & .MHT File links
+If PrivatePath <> "" and PublicPath <> "" Then
+
+  sMessage = sMessage & "</table><table border=0 width=100% colspan = 2>"
+  sMessage = sMessage & "<tr><td align = left><font size=2.9 face = Calibri color = Black >For execution report, please click <a href=""" & PublicPath & "\" & DateTime & ".html" & """>here.</a></td></tr>"  
+
+  If blnDebug = True Then 
+    sMessage = sMessage & "</table><table border=0 width=100% colspan = 2>"
+    sMessage = sMessage & "<tr><td align = left><font size=2.9 face = Calibri color = Black >For detailed execution log, please click <a href=""" & PublicPath & "\" & DateTime & ".mht" & """>here.</a></td></tr>"
+  End If   
+ sMessage = sMessage & fAddHTML("  ",2,False,False)  
+  Else
+    sMessage = sMessage & fAddHTML("For execution results and details log, please refer the following files.",1,False,False)
+    sMessage = sMessage & fAddHTML("HTML : " & sHTMLFile,1,False,False)
+    sMessage = sMessage & fAddHTML("TestComplete Log : " & sMHTFile,3,False,False)
+
+End IF
+
+  sMessage = sMessage & fAddHTML("Execution Environment :",1,True,False)
+  sMessage = sMessage & "</table><table border=1 width=50% colspan = 2>"
+  sMessage = sMessage & fAddHTML("Execution Server      -" & strSys_Name & " ",1,False,True)
+  sMessage = sMessage & fAddHTML("Operating System      -" & strOS_Ver & " ",1,False,True)
+  sMessage = sMessage & fAddHTML("Excel Version         -" & strExcel_Ver  & " ",3,False,True)
+  sMessage = sMessage & "</table><table border=0 width=100% colspan = 2>"
+  sMessage = sMessage & fAddHTML("Total TestCases Executed :" & intTC_SlNo & "/" & intTotal_TC & " ",1,True,False)
+  sMessage = sMessage & "</table><table border=1 width=50% colspan = 2>"
+  sMessage = sMessage & fAddHTML("Total TestCases Passed   -" & intTotal_Pass & " ",1,False,True)
+  sMessage = sMessage & fAddHTML("Total Failed Cases       -" & intTotal_Fail & " ",1,False,True)
+  sMessage = sMessage & fAddHTML("Total Aborted Cases      -" & intTotal_Abort & " ",1,False,True)
+  sMessage = sMessage & fAddHTML("Total Execution Time     -" & strActualExecutionTime & " ",3,False,True)
+  sMessage = sMessage & "</table><table border=0 width=100% colspan = 2>"
+
+
+If intTotal_Fail > 0 Then
+  Set oFileSystem = Sys.OleObject("Scripting.FileSystemObject") ' FileSystemObject
+  If aqFileSystem.Exists(strProjectFilesPath & "FailedCases.txt") = True Then
+    ' put a table here for failed cases. Read line by line and insert in html table
+    sMessage = sMessage & fAddHTML("Following are the failed cases:",1,True,False) 
+    sMessage = sMessage & "</table><table border=0 width=80% colspan = 2>"
+    Set oFile = oFileSystem.OpenTextFile(strProjectFilesPath & "FailedCases.txt", 1)            ' Open File Object
+    While Not oFile.AtEndOfStream  ' Read from file
+      strTemp = oFile.ReadLine
+      Call Log.Message (strTemp)                  
+      If strTemp <> "" Then
+        aArray = split(strTemp,"-", 2)
+        sMessage = sMessage & "<tr><td width=12% align = left><font size=2.9 face = Calibri color = Red>" & _
+        cstr(aArray(0)) & "</td><td align = left><font size=2.9 face = Calibri color = Red>" &  cstr(aArray(1)) & "</td></tr>"
+      End IF
+    Wend
+    oFile.Close
+    sMessage = sMessage & "</table><table border=0 width=100% colspan = 2>"
+  End IF
+End IF
+
+If intTotal_Abort > 0 Then
+  Set oFileSystem = Sys.OleObject("Scripting.FileSystemObject") ' FileSystemObject
+  If aqFileSystem.Exists(strProjectFilesPath & "AbortedCases.txt") = True Then     
+    ' put a table here for failed cases. Read line by line and insert in html table
+    sMessage = sMessage & fAddHTML("Following are the aborted cases:",1,True,False) 
+    sMessage = sMessage & "</table><table border=0 width=80% colspan = 2>"    
+    Set oFile = oFileSystem.OpenTextFile(strProjectFilesPath & "AbortedCases.txt", 1)            ' Open File Object
+    While Not oFile.AtEndOfStream  ' Read from file
+      strTemp = oFile.ReadLine
+      Call Log.Message (strTemp)
+      If strTemp <> "" Then
+        aArray = split(strTemp,"-", 2)
+        sMessage = sMessage & "<tr><td width=12% align = left><font size=2.9 face = Calibri color = Red>" & _
+        cstr(aArray(0)) & "</td><td align = left><font size=2.9 face = Calibri color = Red>" &  cstr(aArray(1)) & "</td></tr>"
+      End IF
+    Wend
+    oFile.Close
+    sMessage = sMessage & "</table><table border=0 width=100% colspan = 2>"
+  End IF
+End IF
+
+if blnSuccess = False Then 
+  sMessage = sMessage & fAddHTML("Critical error while executing the suite : '" & strCriticalError & "'", 1,True,False)'  vbCrLf  vbCrLf
+  sMessage = sMessage & fAddHTML("Please take appropriate action immediately and re-run the suite.  Thanks",1,False,False)'  vbCrLf  vbCrLf
+ElseIf intTotal_Abort > 0 Then
+  sMessage = sMessage & fAddHTML("One or more cases got aborted during execution.", 1,False,False)'  vbCrLf  vbCrLf
+  sMessage = sMessage & fAddHTML("Please see if it is because of script error or EDGE issue and take appropriate action. Thanks",1,True,False)'  vbCrLf  vbCrLf
+End If
+strTemp = "Execution completed with " & Log.ErrCount & " errors and " & Log.WrnCount & " warnings."
+sMessage = sMessage & fAddHTML(strTemp,2,False,False)
+
+sMessage = smessage & fAddHTML("Regards,",1,False,False)'  vbCrLf
+sMessage = sMessage & fAddHTML("EDGE Automation Team",3,False,False)'  vbCrLf  vbCrLf
+sMessage = sMessage & fAddHTML("This is automated e-mail notification.  Please don't reply to this.",5,False,False)
+
+sMessage = sMessage & "</table><div class=""c1""><img src=""http://www.ceicdata.com/images/CEIC_Logo.gif"" alt=""Guru - Where is gif file?""></div>" & _
+              "</body></HTML>"
+
+FrameEmailMessage = sMessage 
+
+If Err.Number <> 0 Then
+  Log.Warning "Error while framing e-mail body -" & Err.Description
+  Err.Clear
+End IF
+
+End Function
+
+'**************************************************************
+' Purpose :
+' Create : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+Sub ObjectNotloaded(keyword)
+'
+' Author        : Guru
+' Date          : 14-09-2009
+' Last Modified : 10-05-2012 By Mohanakshi
+'
+' Purpose : In case of expected object not got loaded, verify if there is any known EDGE windows
+' which is abstructing the flow.
+'
+
+Dim intI
+' figure out which is unexpected window and log messages
+On Error Resume Next
+
+Call Log.Message("'ObjectNotloaded' method was called from '" & keyword & "'")
+
+If sLookFor_ErrorMsg = True Then
+
+Exit Sub
+End If
+' Unknown problem :( .  Stop execution
+Log.Picture Sys.Desktop.ActiveWindow(),"Unexpected Screen", "UnKnown/Unexpected screen appeared while executing TC - "  & strTestCase_No, pmHighest
+Set objTemp = Sys.Desktop.ActiveWindow
+Call Log.Message("Name of unexpected window is : " & objTemp.FullName)
+Call Log.Message("Caption of unexpected window is : " & objTemp.wndCaption)
+
+dim PicObj
+Set PicObj = Utils.Picture
+Set PicObj = Sys.Desktop.ActiveWindow.Picture()
+PicObj.SavetoFile(strLogFolder & "Screenshots\" & strTestCase_No &  "_" & picCount & ".jpg")
+picCount = picCount +  1
+
+strCriticalError = "Unknown/unhandled Window appered while executing keyword - " & keyword & _
+  " in testcase - " & strTestCase_No & ".  Please handle!"
+Log.Error(strCriticalError)
+'Call Sys.Keys("~[F4]")       
+strTCRemarks = strCriticalError
+objtemp.Close
+' Try to continue despite of errors for first three times.
+intCriticalErrorCount = intCriticalErrorCount + 1
+If intCriticalErrorCount >= 3 Then
+  
+  'Runner.Stop
+  sys.Process("ISI.CeicDataManager.Startup").Terminate
+  delay 500,"Closing EDGE as Unknown window found"
+  LoginToEDGE
+End IF
+End Sub 
+
+Function fAddHTML(AddString,LineBrake,Bold,sSplit)
+' Convert string to HTML table row
+' String, Line brakes, Font Bold, Split
+
+dim sString, aArray, intI, scolor
+On Error Resume Next
+intI = 0 
+if sSplit = True Then
+  
+ aArray = Split(AddString,"-", 2)
+End IF
+sColor = "Black"
+If Bold = True Then
+  AddString = "<b>" & AddString & "</b>"
+  sColor ="Blue"
+End IF
+
+sString = " "
+If Bold = False Then
+  If sSplit = False Then
+    fAddHTML = "<tr><td width=30% align = left><font size=2.9 face = Calibri color = " & scolor & " >" & AddString & "</td></tr>"
+  Else
+    fAddHTML = "<tr><td width=30% align = left><font size=2.9 face = Calibri color = " & scolor & " >" & cstr(aArray(0)) & "</td><td align = left><font size=2.9 face = Calibri color = " & scolor & " >" &  cstr(aArray(1)) & "</td></tr>"
+  End IF
+Else
+  If sSplit = False Then
+    fAddHTML = "<tr><td width=30% align = left><font size=3.5 face = Calibri color = " & scolor & " >" & AddString & "</td></tr>"
+  Else
+    fAddHTML = "<tr><td width=30% align = left><font size=3.5 face = Calibri color = " & scolor & " >" & cstr(aArray(0)) & "</td><td align = left><font size=2.9 face = Calibri color = " & scolor & " >" &  cstr(aArray(1)) & "</td></tr>"
+  End IF
+End If 
+
+Do Until LineBrake <= 1
+  LineBrake = LineBrake - 1
+  fAddHTML = fAddHTML & "</table><table border=0><tr><td width=100%>" & sString & "</td></tr>"
+Loop              
+
+If Err.Number <> 0 Then
+  Log.Warning "Error Occurred in 'fAddHTML' function :" & Err.Description 
+End IF
+End Function
+
+'**************************************************************
+' Purpose : 
+' Create : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+Sub ExcelActions(Action)
+'Dim wshShell , poProcess
+'' Author        : Guru
+'' Date          : 25-09-2009
+'' Last Modified : 10-05-2012 By Mohanakshi
+''
+'' Purpose : To provide Excel Compatibality.  Handle Key Press events based on Excel Version
+''
+'On Error Resume Next
+'objExcel.visible=True
+'
+'
+'If blnEDGESystem = False Then  ' EDGE will be y else EDGE will be y1
+'  Select Case Action
+'        Case "LOGIN"
+'          Call Sys.Keys("~L")
+'        Case "EDGE_VERSION"     ' - About EDGE button        
+'          Call Sys.Keys("~y")
+'          Call Sys.Keys("y7")          
+'        Case "REFRESH_LINK"
+'          Call Sys.Keys("~y")
+'          Call Sys.Keys("y2")
+'          Call Sys.Keys("[Enter]")
+'        Case "REFRESH_SHEET"
+'          Call Sys.Keys("~y")
+'          Call Sys.Keys("y2")
+'          Call Sys.Keys("[Down][Enter]")
+'        Case "REFRESH_WORKSHEET"
+'          Call Sys.Keys("~y")
+'          Call Sys.Keys("y2")
+'          Call Sys.Keys("[Down][Down][Enter]")
+'        Case "RELOAD_SHEET"
+'          Call Sys.Keys("~y")
+'          Call Sys.Keys("y3") 
+'        Case "CONNECTION_SETUP"
+'          Call Sys.Keys("~C")
+'        Case Else
+'          Call Log.Message ("Excel action not defined " & Action)
+'        End Select 
+'Else
+'  Select Case Action
+'        Case "LOGIN"
+'          Call Sys.Keys("~L")
+'        Case "EDGE_VERSION"     ' - About EDGE button        
+'          Call Sys.Keys("~y1")
+'          Call Sys.Keys("y8")          
+'        Case "REFRESH_LINK"
+'          Call Sys.Keys("~y1")
+'          Call Sys.Keys("y3")
+'          Call Sys.Keys("[Enter]")
+'        Case "REFRESH_SHEET"
+'          Call Sys.Keys("~y1")
+'          Call Sys.Keys("y3")
+'          Call Sys.Keys("[Down][Enter]")
+'        Case "REFRESH_WORKSHEET"
+'         Call Sys.Keys("~y1")
+'          Call Sys.Keys("y3")
+'          Call Sys.Keys("[Down][Down][Enter]")
+'        Case "RELOAD_SHEET"
+'          Call Sys.Keys("~y1")
+'          Call Sys.Keys("y4") 
+'        Case "CONNECTION_SETUP"
+'          Call Sys.Keys("~C")
+'        Case Else
+'          Call Log.Message ("Excel action not defined " & Action)
+'        End Select 
+'End IF
+'
+msgbox ("Do you need Excel actions?")
+End Sub
+
+'**************************************************************
+' Purpose : 
+' Create  : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+Function SendEmail(mFrom, mTo, mSubject, mBody, mAttachment)
+'dim schema, mConfig,mMessage, intI 
+'  Err.Clear
+'  On Error Resume Next
+' 
+'  schema = "http://schemas.microsoft.com/cdo/configuration/"
+'  Set mConfig = Sys.OleObject("CDO.Configuration")                                             
+'  mConfig.Fields.Item(schema  "sendusing") = 2 ' cdoSendUsingPort
+'  mConfig.Fields.Item(schema  "smtpserver") = "smtp.gmail.com"  ' SMTP server
+'  mConfig.Fields.Item(schema  "smtpserverport") = 25 ' Port number
+'  
+'  mConfig.Fields.Item(schema  "smtpauthenticate") = 1
+'  mConfig.Fields.Item(schema  "smtpusessl") = True
+'   mConfig.Fields.Item(schema  "sendusername") = "info@shravas.com"
+'   mConfig.Fields.Item(schema  "sendpassword") = "Shravas@info"
+'  'mConfig.Fields.Update()
+'  
+'  Set mMessage = Sys.OleObject("CDO.Message")
+'  mMessage.Configuration = mConfig
+'  mMessage.From = mFrom
+'  mMessage.To = mTo
+'  mMessage.Subject = mSubject
+'  mMessage.HTMLBody = mBody
+'  
+'  aqString.ListSeparator = ","
+'    For intI = 0 To aqString.GetListLength(mAttachment) - 1 
+'      mMessage.AddAttachment aqString.GetListItem(mAttachment, intI)
+'    Next
+'  mMessage.Send
+'  
+'  If Err.Number > 0 Then
+'    Log.Error "E-mail cannot be sent.  " &  Err.Description
+'    SendEMail = False
+'  Else
+'    Call Log.Message ("Message to <"  mTo  "> was successfully sent")
+'    SendEMail = True
+'  End If
+'  Err.Clear
+
+
+  Dim i, schema, mConfig, mMessage
+
+  Err.Clear
+  On Error Resume Next
+
+  schema = "http://schemas.microsoft.com/cdo/configuration/"
+  Set mConfig = Sys.OleObject("CDO.Configuration")
+  mConfig.Fields.Item(schema + "sendusing") = 2 ' cdoSendUsingPort
+  mConfig.Fields.Item(schema + "smtpserver") = "smtp.gmail.com" ' SMTP server
+  mConfig.Fields.Item(schema + "smtpserverport") = 25 ' Port number
+
+   mConfig.Fields.Item(schema + "smtpauthenticate") = 1
+   mConfig.Fields.Item(schema + "smtpusessl") = True
+   mConfig.Fields.Item(schema + "sendusername") = "info@shravas.com"
+   mConfig.Fields.Item(schema + "sendpassword") = "Shravas@info"
+
+  mConfig.Fields.Update
+
+  Set mMessage = Sys.OleObject("CDO.Message")
+  mMessage.Configuration = mConfig
+  mMessage.From = mFrom
+  mMessage.To = mTo
+  mMessage.Subject = mSubject
+  mMessage.HTMLBody = mBody
+
+  aqString.ListSeparator = ","
+  For i = 0 To aqString.GetListLength(mAttachment) - 1 
+    mMessage.AddAttachment aqString.GetListItem(mAttachment, i)
+  Next
+
+  mMessage.Send
+
+  If Err.Number > 0 Then
+    Log.Error "Email cannot be sent", Err.Description
+    SendEMail = False
+  Else
+    Log.Message "Message to <" + mTo +  "> was successfully sent"
+    SendEMail = True
+  End If
+  
+  Err.Clear
+  
+End Function
+
+  
+
+
+'**************************************************************
+' Purpose : Core of keyword driven framework.  Executes the given keyword in control file
+' Create  : 16/Apr/2015
+' Last Updated : 
+'**************************************************************
+
+
+Sub ExecuteKeyWord(sKeyWord, sTestData1, sTestData2)                 ' Execute Keyword 
+
+On Error Resume Next
+  dim sSettings, sControlName, sControlValues, sControlType
+
+  Call Log.Message("Executing keyword : " & skeyword & " as part of TestCase :" & strTestCase_No)
+  
+  
+  Select case sKeyword   
+    Case Ucase("Launch_EDGE") 
+      Call sLaunchEDGE()  
+    Case Ucase("OpenSTP")
+      Call sOpenSTP(sTestData1)
+    Case Ucase("ComputeSeries")            
+      Call sComputeSeries(sTestData1)
+    Case Ucase("CompareRange")
+      Call sCompareRange(sTestData1)
+    Case Ucase("LayoutModule")
+      Call sLayoutModule(sTestData1)
+    Case Ucase("LoadLayout")
+      Call sLoadLayout()
+    Case Ucase("LoadSource")
+      Call sLoadSource(sTestData1)  
+    Case UCase("CreateSeries")
+      Call sCreateSeries(sTestData1)
+    Case UCase("ComputePlus")
+      Call sComputePlus(sTestData1)
+    Case UCase("ComputeDiv")
+      Call sComputeDiv(sTestData1)
+    Case UCase("ChangePctyoy")
+      Call sChangePctyoy(sTestData1)
+    Case UCase("UpdateTimepoints")
+      Call sUpdateTimepoints(sTestData1)
+    Case UCase("DeleteTimepoints")
+      Call sDeleteTimepoints(sTestData1)
+    Case UCase("DropPendingSTP")
+      Call sPendingSTP(sTestData1)
+    Case UCase("PendingMGReleased")
+      Call sPendingMGReleased(sTestData1)
+    Case UCase("UpdateSTPTimepoint")
+      Call sUpdateSTPTimepoint(sTestData1) 
+    Case UCase("Updatelog")
+      Call sUpdatelog(sTestData1) 
+    Case Ucase("LaunchCDM")
+      Call sLaunchCDM(sTestData1)  
+    Case "LOGOUT"
+      Call LogOutCDM("LOGOUT")
+    Case UCase("FileRepository")
+      Call sFileRepository(sTestData1)
+    Case UCase("FileRepositoryUsage")
+      Call sFileRepositoryUsage(sTestData1)
+    Case UCase("LaunchANDClearCDM")
+      Call sLaunchANDClearCDM(sTestData1)
+    Case UCase("LoadChineseKeySeries")
+      Call sLoadChineseKeySeries()
+    Case UCase("Uploadxlsfile")
+      Call sUploadxlsfile(sTestData1)
+    Case UCase("Uploadxlsxfile")
+      Call sUploadxlsxfile(sTestData1)
+    Case Ucase("Home_Source") 
+      Call sHome_Source 
+    Case Ucase("Home_Layout") 
+      Call sHome_Layout  
+     Case Ucase("SourceModule")
+      Call sSourceModule(sTestData1)
+    Case Ucase("LayoutModule")
+      Call sLayoutModule(sTestData1)
+    Case Ucase("LaunchCDM")
+      Call sLaunchCDM(sTestData1)  
+    Case Ucase("CDMTree")
+      Call sCDMTree(sTestData1)
+    Case Ucase("SourceSchedule_Checklist")
+      Call sSourceSchedule_Checklist(sTestData1) 
+    Case Ucase("Home_MasterMaintenance")
+      Call sHome_MasterMaintenance() 
+    Case Ucase("Unit")
+      Call sUnit(sTestData1) 
+    Case Ucase("UnitSTP")
+      Call sUnitSTP(sTestData1)
+    Case Ucase("Home_ConfirmUpdateCompletion")
+      Call sHome_ConfirmUpdateCompletion()
+    Case Ucase("Home_Report")
+      Call sHome_Report()
+    Case Ucase("Report")
+      Call sReport(sTestData1)
+    Case Ucase("Home_ReleaseSchedule")
+      Call sHome_ReleaseSchedule()
+    Case Ucase("ReleaseSchedule")
+      Call sReleaseSchedule(sTestData1)
+    Case Ucase("CDMRelSc")
+      Call sCDMRelSc(sTestData1)
+    Case Ucase("ClearCache")
+      Call sClearCache() 
+    Case Ucase("Home_SeriesSearch")
+      Call sHome_SeriesSearch(sTestData1) 
+    Case Ucase("SeriesOpenSTP")
+      Call sSeriesOpenSTP(sTestData1) 
+    Case Ucase("SourceWorkspaceBM")
+      Call sSourceWorkspaceBM(sTestData1)
+    Case Ucase("CDMFootnote")
+      Call sCDMFootnote(sTestData1)   
+    Case UCase("CheckLayoutModuleDuplicateworkspace")
+      Call sCheckLayoutModuleDuplicateworkspace(sTestData1)
+    Case UCase("CheckLayout")
+      Call sCheckLayout(sTestData1)
+    Case UCase("CheckLayoutWorkspace")
+      Call sCheckLayoutWorkspace(sTestData1)
+    Case UCase("CreateSeriesTimePoints")
+      Call sCreateSeriesTimePoints(sTestData1)
+    Case UCase("CreateSeriesTimePoints2")
+      Call sCreateSeriesTimePoints2(sTestData1)
+    Case Ucase("CreateTimePoints")
+      Call sCreateTimePoints(sTestData1)
+    Case Ucase("CreateTimePoints1")
+      Call sCreateTimePoints1(sTestData1)
+    Case UCase("UpdateSeries")
+      Call sUpdateSeries(sTestData1)
+    Case UCase("DM")
+      Call sDM(sTestData1)
+    Case UCase("UpdateSTP")
+      Call sUpdateSTP(sTestData1)
+    Case Ucase("LoadSTP")
+      Call sLoadSTP(sTestData1)
+    Case Ucase("SourceBM")
+      Call sSourceBM(sTestData1)
+    Case Ucase("SourceWorkSpacevwrBM")
+      Call sSourceWorkSpacevwrBM()
+    Case Ucase("LayoutBM")
+      Call sLayoutBM(sTestData1)
+    Case Ucase("LayoutWorkSpacevwrBM")
+      Call sLayoutWorkSpacevwrBM()
+    Case Ucase("LayoutWorkSpacevwr")
+      Call sLayoutWorkSpacevwr
+    Case UCase("CreateSeriesTimePoints40")
+      Call sCreateSeriesTimePoints40(sTestData1)
+    Case UCase("CreateSeriesTimePoints240")
+      Call sCreateSeriesTimePoints240(sTestData1)
+    Case Ucase("CreateTimePoints40")
+      Call sCreateTimePoints40(sTestData1)
+    Case Ucase("CreateTimePoints140")
+      Call sCreateTimePoints140(sTestData1)
+    Case Ucase ("CheckLayoutWorkspaceVwrLayout")
+      Call sCheckLayoutWorkspaceVwrLayout(sTestData1)
+    Case Ucase ("CheckSource")
+      Call sCheckSource(sTestData1)
+    Case Ucase ("SourceMacroCapFlag")
+      Call sSourceMacroCapFlag(sTestData1)
+    Case Ucase ("SourceATP")
+      Call sSourceATP(sTestData1)
+    Case Ucase ("SourceOpenATP")
+      Call sSourceOpenATP(sTestData1)
+    Case Ucase ("CheckSrc")
+      Call sCheckSrc(sTestData1)
+    Case Ucase("CloseEdge")
+      Call sCloseEdge
+    Case Ucase("Upload20")
+      Call sUpload20(sTestData1)
+    Case Ucase("ReadCDMTree")
+      Call sReadCDMTree(sTestData1)
+    Case Ucase("ExpandLayout")
+      Call sExpandLayout(sTestData1)
+    Case Ucase("Layout_FileRepAddLink")
+      Call sLayout_FileRepAddLink()
+    Case UCase("CheckPendingSTP")
+      Call sCheckPendingSTP(sTestData1)
+    Case UCase("PendingMGReleased1")
+      Call sPendingMG() 
+    Case UCase("Updatelog1")
+      Call sUpdatelog1(sTestData1)
+    Case UCase("AddMCFlag")
+      Call sAddMCFlag(sTestData1) 
+    Case UCase("RelSch_STP")
+      Call sRelSch_STP(sTestData1)
+    Case UCase("RelSch_STP1")
+      Call sRelSch_STP1(sTestData1)
+    Case Ucase("CDMRelSc1")
+      Call sCDMRelSc1(sTestData1)
+    Case Ucase("CDMTree1")
+      Call sCDMTree1(sTestData1)
+    Case Ucase("SourceSch_AddTP")
+      Call sSourceSch_AddTP(sTestData1)
+    Case Ucase("SourceSch_DailyCheck")
+      Call sSourceSch_DailyCheck(sTestData1)
+    Case Ucase("ToDo_PendingSTP")
+      Call sToDo_PendingSTP(sTestData1)
+    Case Ucase("ToDo_CheckAll")
+      Call sToDo_CheckAll(sTestData1)
+    Case Ucase("ToDo_RenameSource")
+      Call sToDo_RenameSource(sTestData1)
+    Case Ucase("ToDo_CheckAll1")
+      Call sToDo_CheckAll1(sTestData1)
+    Case Ucase("DelayWait")
+      Call DelayWait(sTestData1)
+    Case Ucase("EdgeCleanUp")
+      Call EdgeCleanUp
+    Case Ucase("SaveCNSTP")
+      Call SaveCNSTP(sTestData1)
+    Case Ucase("eAIP_STP")
+      Call eAIP_STP(sTestData1)
+    Case Ucase("SaveCNSTP1")
+      Call SaveCNSTP1(sTestData1)
+    Case Ucase("DailyCheckPointTimePoint")
+      Call sDailyCheckPointTimePoint(sTestData1)
+    Case Ucase("OpenSourceWSViewer")
+        Call sOpenSourceWSViewer() 
+    Case Ucase("VerifyButtons")
+        Call sVerifyButtons() 
+    Case Ucase("OpenWorkspace")
+        Call sOpenWorkspace(sTestData1)   
+   Case Ucase("CloseWindow")
+        Call SCloseWindow(sTestData1)
+   Case Ucase("UploadFromSWV")
+        Call sUploadFromSWV(sTestData1)
+   Case Ucase("Drop")
+        Call sDrop(sTestData1)
+   Case Ucase("Refersh")
+        Call sRefersh()
+   Case Ucase("RightClick")
+        Call sRightClick()
+   Case Ucase("OpenWorkspaceRightClick")
+        Call sOpenWorkspaceRightClick(sTestData1)
+  Case Ucase("UploadRightClickSWV")
+        Call sUploadRightClickSWV(sTestData1)
+  Case Ucase("DropRightClick")
+        Call sDropRightClick(sTestData1)
+   Case Ucase("Attributes")
+        Call sAttributes()
+   Case Ucase("WorkSpaceName")
+      Call sWorkSpaceName()
+   Case Ucase("CheckWorkspaceName")
+      Call sCheckWorkspaceName()
+   Case Ucase("CreatedBy")
+      Call sCreatedBy()
+   Case Ucase("Owner")
+      Call sOwner(sTestData1)
+   Case Ucase("CreatedAt")
+      Call sCreatedAt()
+   Case Ucase("UpdatedAT")
+      Call sUpdatedAT(sTestData1)
+   Case Ucase("ShowSearchFilter")
+      Call sShowSearchFilter(sTestData1)
+   Case Ucase("SourceAttributes")
+      Call sSourceAttributes(sTestData1)
+   Case Ucase("CheckEditableFiled")
+      Call sCheckEditableFiled(sTestData1)
+  Case Ucase("VerifyCheckBox")
+      Call sVerifyCheckBox(sTestData1)
+  Case Ucase("SourceTypeForLevel2")
+      Call sSourceTypeForLevel2(sTestData1)
+  Case Ucase("SourceNatureForLevel2")
+      Call sSourceNatureForLevel2(sTestData1)
+  Case Ucase("FindAndRefresh")
+      Call sFindAndRefresh(sTestData1)
+  Case Ucase("LaunchCDMNext")
+      Call sLaunchCDMNext(sTestData1)
+  Case Ucase("CDMNextTree")
+      Call sCDMNextTree(sTestData1)
+  Case Ucase("NWSoptions")
+      Call sNWSoptions(sTestData1)
+   Case Ucase("OpenForEditSource")
+      Call sOpenForEditSource(sTestData1)
+   Case Ucase("NSOButton")
+      Call sNSOButton(sTestData1)
+   Case Ucase("NSOFieldDescription")
+      Call sNSOFieldDescription(sTestData1)
+   Case Ucase("NSOValidation")
+      Call sNSOValidation(sTestData1)
+   Case Ucase("NSOAddnewSource")
+      Call sNSOAddnewSource(sTestData1)
+  Case Ucase("RedDotCreation")
+      Call sRedDotCreation(sTestData1)
+   Case Ucase("RedDotValidation")
+      Call sRedDotValidation(sTestData1)
+   Case Ucase("RightClickDispalyViewer")
+      Call sRightClickDispalyViewer(sTestData1)
+  Case Ucase("NewWorkSpace")
+      Call sNewWorkSpace(sTestData1)
+  Case Ucase("ExpandAll_CollapseAll")
+      Call sExpandAll_CollapseAll(sTestData1)
+  Case Ucase("ComboSelection")
+      Call sComboSelection(sTestData1)  
+  Case Ucase("ShortCutKeys")
+      Call sShortCutKeys(sTestData1) 
+  Case Ucase("ATP")
+      Call sATP(sTestData1)     
+  Case Ucase("Subscripton")
+      Call sSubscripton(sTestData1)
+  Case Ucase("STP")
+      Call sSTP(sTestData1) 
+  Case Ucase("OpeningWorkSpace")
+      Call sOpeningWorkSpace(sTestData1)     
+  Case Ucase("AddFolder")
+      Call sAddFolder(sTestData1)   
+  Case Ucase("OpenSavedWorkSpace")
+      Call sOpenSavedWorkSpace(sTestData1)      
+  Case Ucase("NSO")
+      Call sNSO(sTestData1) 
+  Case Ucase("MultipleLevelFolder")
+      Call sMultipleLevelFolder(sTestData1) 
+  Case Ucase("AmendWS")
+      Call sAmendWS(sTestData1) 
+  Case Ucase("VerifyUploadAfterDelete")
+      Call sVerifyUploadAfterDelete(sTestData1) 
+  Case Ucase("CopyFolder")
+      Call sCopyFolder(sTestData1) 
+  Case Ucase("CopyFolderwithSeries")
+      Call sCopyFolderwithSeries(sTestData1)
+  Case Ucase("UploadFolder")
+      Call sUploadFolder(sTestData1) 
+  Case Ucase("DiffentLevel3CopyFolder")
+      Call sDiffentLevel3CopyFolder(sTestData1)
+  Case Ucase("CopyFolderPasteInside")
+      Call sCopyFolderPasteInside(sTestData1)  
+  Case Ucase("MultiLevelCopyFolderPasteInside")
+      Call sMultiLevelCopyFolderPasteInside(sTestData1) 
+  Case Ucase("CutFolders")
+      Call sCutFolders(sTestData1)  
+  Case Ucase("FindAndReplace")
+      Call fFindAndReplace(sTestData1)
+  Case Ucase("UploadWorkspace")
+      Call sUploadWorkspace(sTestData1) 
+  Case Ucase("AddSchedule")
+      Call sAddSchedule(sTestData1) 
+  Case Ucase("UploadSchedule")
+      Call sUploadSchedule(sTestData1) 
+  Case Ucase("AddTimePoint")
+      Call sAddTimePoint(sTestData1)
+  Case Ucase("DeleteSchdeule")
+      Call sDeleteSchdeule(sTestData1)
+  Case Ucase("FillinSeries")
+      Call sFillinSeries(sTestData1)
+  Case Ucase("ReleaseStatusManual")
+      Call sReleaseStatusManual(sTestData1)
+  Case Ucase("ReleaseStatusAuto")
+      Call sReleaseStatusAuto(sTestData1)
+  Case Ucase("DailySetting")
+      Call sDailySettings(sTestData1)
+  Case Ucase("DailySettingsCopyPaste")
+      Call sDailySettingsCopyPaste(sTestData1)
+  Case Ucase("FindAndReplaceSeries")
+      Call sFindAndReplaceSeries(sTestData1)
+  Case Ucase("FindAndReplaceFolder")
+      Call sFindAndReplaceFolder(sTestData1)
+  Case Ucase("FindAndDeletSeries")
+      Call sFindAndDeletSeries(sTestData1)
+  Case Ucase("UpdateDelete")
+      Call sUpdateDelete(sTestData1)
+  Case Ucase("FindAndDeletFolder")
+      Call sFindAndDeletFolder(sTestData1)
+  Case Ucase("GetLatestStatus")
+      Call sGetLatestStatus(sTestData1)
+  Case Ucase("DailyRelease")
+      Call sDailyRelease(sTestData1)
+  Case Ucase("AssignValue")
+      Call sAssignValue(sTestData1)
+  Case Ucase("Is_Publication")
+      Call sIs_Publication(sTestData1)
+  Case Ucase("Subscription")
+      Call sSubscription(sTestData1)
+  Case Ucase("AttachDetachSeries")
+      Call sAttachDetachSeries(sTestData1)
+  Case Ucase("CopySeries")
+      Call sCopySeries(sTestData1)
+  Case Ucase("Diff_Level2_CopySeries")
+      Call sDiff_Level2_CopySeries(sTestData1)     
+  Case Ucase("AddSeperator")
+      Call sAddSeperator(sTestData1)
+  Case Ucase("MakePrimary")
+      Call sMakePrimary(sTestData1)
+  Case Ucase("SaveAndOpenSWV")
+      Call sSaveAndOpenSWV(sTestData1)  
+  Case Ucase("AddCategory")
+      Call sAddCategory(sTestData1)
+  Case Ucase("AttachSeries_indicator")
+      Call sAttachSeries_Indicator(sTestData1) 
+  Case Ucase("PrimaryWarning")
+      Call sPrimaryWarning(sTestData1)  
+  Case Ucase("DetachSeries")
+      Call sDetachSeries(sTestData1)  
+  Case Ucase("AddNewSchedule")
+      Call sAddNewSchedule(sTestData1)   
+  Case Ucase("AutoFill")
+      Call sAutoFill(sTestData1)
+  Case Ucase("ScheduleUpdate")
+      Call sScheduleUpdate(sTestData1)
+  Case Ucase("Level1Right")
+      Call sLevel1Right(sTestData1)
+  Case Ucase("NewLayoutTopic")
+      Call sNewLayoutTopic(sTestData1)   
+  Case Ucase("OpenForViewLayout")
+      Call sOpenForViewLayout(sTestData1)      
+  Case Ucase("OpenForEditLayout")
+      Call sOpenForEditLayout(sTestData1) 
+  Case Ucase("SeriesMapping")
+      Call sAddSeriesMapping(sTestData1) 
+  Case Ucase("DeleteFolderLayout")
+      Call sDeleteFolderLayout(sTestData1) 
+  Case Ucase("CopyLayoutFolder")
+      Call sCopyLayoutFolder(sTestData1) 
+  Case Ucase("DiffentLevel3CopyLayoutFolder")
+      Call sDiffentLevel3CopyLayoutFolder(sTestData1) 
+  Case Ucase("CopyPasteInsideLayout")
+      Call sCopyPasteInsideLayout(sTestData1) 
+  Case Ucase("TwoLevel2RowSelectionForInside")
+      Call sTwoLevel2RowSelectionForInside(sTestData1) 
+  Case Ucase("Level3WithSeriesCopyFolder")
+      Call sLevel3WithSeriesCopyFolder(sTestData1) 
+  Case Ucase("CutLayoutFolders")
+      Call sCutLayoutFolders(sTestData1) 
+  Case Ucase("CutLayoutFoldersInside")
+      Call sCutLayoutFoldersInside(sTestData1) 
+  Case Ucase("CreateSeriesModified")
+      Call sCreateSeriesModified(sTestData1)
+  Case Ucase("ExcelKill")
+      Call ExcelProcessKill()
+  Case Ucase("SearchSeries")
+      Call sSearchSeries(sTestData1)
+  Case Ucase("UpdateSeries_Modified")
+      Call sUpdateSeries_Modified(sTestData1)
+  Case Ucase("BMTStress")
+      Call sBMTStress(sTestData1)
+  Case Ucase("CreateSeries_Compute")
+      Call sCreateSeries_Compute(sTestData1)
+  Case Ucase("ExportFootNote")
+      Call sExportFootNote(sTestData1) 
+  Case Ucase("ReadCDMTree_1")
+      Call sReadCDMTree_1(sTestData1)  
+  Case Ucase("MakePrimaryAttach")
+      Call sMakePrimaryAttach(sTestData1)   
+  Case Ucase("ReleaseStatusChange")
+      Call sReleaseStatusChange(sTestData1)    
+  Case Ucase("CheckInsertFormula")
+      Call sCheckInsertFormula(sTestData1)      
+  Case Ucase("ComputePlus_Verify")
+      Call sComputePlus_Verify(sTestData1)  
+  Case Ucase("CreatAndVerifySeries")
+      Call sCreatAndVerifySeries(sTestData1)
+  Case Ucase("TPValidation")
+      Call sTPValidation(sTestData1)
+  Case Ucase("Amend_Series")
+      Call sAmend_Series(sTestData1)
+  Case Ucase("Verify_AddFrequency")
+      Call sVerify_AddFrequency(sTestData1)
+  Case Ucase("AddDate_Validation")
+      Call sAddDate_Validation(sTestData1)
+  Case Ucase("Series_Remark")
+      Call sSeries_Remark(sTestData1)
+  Case Ucase("Verify_PartialUpload")
+      Call sVerify_PartialUpload(sTestData1)  
+  Case Ucase("Check_MarkGood")
+      Call sCheck_MarkGood(sTestData1) 
+  Case Ucase("Internal_Remarks")
+      Call sInternal_Remarks(sTestData1) 
+  Case Ucase("Series_Information_Verification")
+      Call sSeries_Information_Verification(sTestData1) 
+  Case Ucase("Source_Information_Verification")
+      Call sSource_Information_Verification(sTestData1)
+  Case Ucase("QC_Setting")
+      Call sQC_Setting(sTestData1)
+  Case Ucase("Verify_Addin_Buttons")
+      Call sVerify_Addin_Buttons(sTestData1)
+  Case Ucase("OpenCNSTP_Rights")
+      Call sOpenCNSTP_Rights(sTestData1)
+  Case Ucase("Unit_Component_Maintenance")
+      Call sUnit_Component_Maintenance(sTestData1)
+  Case Ucase("Import_FootNote")
+      Call sImport_FootNote(sTestData1)
+  Case Ucase("Insert_Link")
+      Call sInsert_Link()
+  Case Ucase("DeletFootNote")
+      Call sDeletFootNote(sTestData1)
+  Case Ucase("Edit_SaveFootNote")
+      Call sEdit_SaveFootNote(sTestData1)
+  Case Ucase("OpenSourceCheckList")
+      Call sOpenSourceCheckList(sTestData1)
+  Case Ucase("OpenSTPAndURLChecklist")
+      Call sOpenSTPAndURLChecklist(sTestData1)     
+  Case Ucase("PublicationDescription")
+      Call sPublicationDescription(sTestData1)        
+     
+  Case Else  
+        strTestCaseResult = "ABORT"
+        strTCRemarks = "TestCase aborted as keyword '" & skeyword & "' not defined in Test sheet"
+        Log.Warning strTCRemarks
+  End Select 
+ ' msgbox Err.Number 
+  'msgbox RouTime
+   If (Err.Number > 0 And  Err.Number<>500 )or strTestCaseResult="ABORT" or strTestCaseResult="FAIL" Then
+   
+   If RouTime<>0 then
+    strTestCaseResult = "FAIL"
+    'strTCRemarks = strTCRemarks & "<br/>"  &"Error in 'ExecuteKeyword()' - " & Err.Description
+    strTCRemarks = strTCRemarks & "<br/>"  &"Execution Failed in "& skeyword &" Function"
+    Err.Clear
+    Call EdgeCleanUp1
+   End If
+  End  If
+End  Sub
